@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="/yohe_site/assets/css/layout.css">
+    
+  <link rel="stylesheet"
+  href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/railscasts.min.css">
+  <link rel="stylesheet" href="/yohe_site/assets/css/post.css"/>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+
+    <title>
+    My Blog
+</title>
+</head>
+<body>
+
+    <div id="container">
+        <div id="nav">
+            <div class="site-header-info">
+                <a href="/yohe_site/">
+                    <img src="https://avatars2.githubusercontent.com/u/16136702?v=4&s=120" width="100" height="100"/>
+                </a>
+                <h1 class="site-title">My Blog</h1>
+                <h2 class="site-description">爱技术，爱生活</h2>
+            </div>
+
+            
+  <div class="post-info">
+    <div class="site-published-separator"></div>
+    <h2 class="site-published">Published</h2>
+    <h2 class="site-publish-date">2017-03-13</h2>
+  </div>
+ 
+        </div>
+
+        
+  <div class="post-content">
+    <div class="post-header">
+      <h2 class="post-cate">in Web安全</h2>
+      <h1>Let's Encrypt</h1>
+    </div>
+    <div class="post-content">
+        <p>迁移到HTTPS已经成为必然，许多API已经必须部署HTTPS才能使用，如我之前分享过的WebRTC等，ios已经强制app使用HTTPS,HTTP2.0必须基于HTTPS之上。。。</p>
+<p>那么这篇文章分享下HTTPS系列之实战部署，从Node server和Nginx Server两种情景来分析。</p>
+<!--more-->
+<h1>证书</h1>
+<p>上篇文章的TLS原理篇提到了证书，用于安全交换公钥，包含了证书订阅者信息，以及CA的数字签名（HASH + 私钥加密，上篇有讲）。</p>
+<h3>字段</h3>
+<p><img src="http://7xsi10.com1.z0.glb.clouddn.com/certificateshow.jpg" alt="certificate">
+证书字段包含了版本，序列号，签名算法，颁发者，颁发对象，有效期，使用者公钥，证书扩展等信息。</p>
+<h3>证书链</h3>
+<p>根CA -&gt; 中间CA(可能多个) -&gt; 最终实体证书</p>
+<p>client（即信赖方）会存放知名根CA的证书。当server发送过来自己的证书时，client会由该证书知道颁发它的上一级CA的证书，接着从上一级的证书里找到再上一级的证书，一级一级直到根CA证书进行验证。</p>
+<h3>证书吊销</h3>
+<p><strong>CRL（证书吊销列表）</strong>，这个列表记录了未过期但是已经被吊销的证书,之前证书字段里的CRL分发点就用于记录CRL地址</p>
+<p>**OCSP（在线证书状态协议）**支持实时查询</p>
+<h1>用openssl生成自签名证书</h1>
+<h3>生成server RSA私钥:</h3>
+<pre class=><code>openssl genrsa -out server.key 1024
+</code></pre>
+<h3>生成server RSA公钥:</h3>
+<pre class=><code>openssl rsa -in server.key -pubout -out server.pem
+</code></pre>
+<h3>CA准备</h3>
+<pre class=><code>$ openssl genrsa -out ca.key 1024 //生成CA私钥
+$ openssl req -new -key ca.key -out ca.csr //通过CA私钥生成证书申请文件
+$ openssl x509 -req -in ca.csr  -signkey ca.key -out ca.crt //生成CA证书
+</code></pre>
+<h3>用CA颁发server证书</h3>
+<pre class=><code>$ openssl req -new -key server.key -out server.csr //通过server私钥生成证书申请文件
+$ openssl x509 -req -CA ca.crt -CAkey ca.key -CAcreateserial -in server.csr -out server.crt //生成server 证书
+</code></pre>
+<p>生成成功:
+<img src="http://7xsi10.com1.z0.glb.clouddn.com/generate.jpg" alt="generate"></p>
+<h1>Node server部署HTTPS</h1>
+<h3>用http-proxy做反向代理，HTTPS-&gt;HTTP,起多个服务</h3>
+<pre class=js><code><span class="hljs-keyword">const</span> https = <span class="hljs-built_in">require</span>(<span class="hljs-string">'https'</span>);
+<span class="hljs-keyword">const</span> proxy = <span class="hljs-built_in">require</span>(<span class="hljs-string">'http-proxy'</span>).createProxyServer({});
+<span class="hljs-keyword">const</span> fs = <span class="hljs-built_in">require</span>(<span class="hljs-string">'fs'</span>);
+<span class="hljs-keyword">const</span> options = {
+    <span class="hljs-attr">key</span>: fs.readFileSync(<span class="hljs-string">'./keys/server.key'</span>),
+    <span class="hljs-attr">cert</span>: fs.readFileSync(<span class="hljs-string">'./keys/server.crt'</span>)
+}
+
+<span class="hljs-keyword">const</span> server = https.createServer(options,(req,res)=&gt;{
+    <span class="hljs-keyword">const</span> host = req.headers.host,
+        ip = req.headers[<span class="hljs-string">'x-forwarded-for'</span>] || req.connection.remoteAddress;
+    <span class="hljs-keyword">switch</span>(host){
+        <span class="hljs-keyword">case</span> <span class="hljs-string">'test.localhost'</span>:
+            proxy.web(req,res,{
+                <span class="hljs-attr">target</span>: <span class="hljs-string">'http://localhost:3000'</span>,
+                <span class="hljs-attr">ssl</span>: {
+                    <span class="hljs-attr">key</span>: fs.readFileSync(<span class="hljs-string">'./keys/server.key'</span>, <span class="hljs-string">'utf8'</span>),
+                    <span class="hljs-attr">cert</span>: fs.readFileSync(<span class="hljs-string">'./keys/server.crt'</span>, <span class="hljs-string">'utf8'</span>)
+                }
+            });
+            <span class="hljs-keyword">break</span>;
+        <span class="hljs-keyword">default</span>:
+            res.writeHead(<span class="hljs-number">200</span>);
+            res.end(<span class="hljs-string">'welcome to node https proxy server'</span>);
+    }
+}).listen(<span class="hljs-number">443</span>);
+</code></pre>
+<h3>将HTTP的80端口请求重定向到HTTPS的443端口</h3>
+<p>在client输入网址默认是http协议的，所以需要重定向一下</p>
+<pre class=js><code><span class="hljs-keyword">const</span> httpServer = http.createServer(<span class="hljs-function">(<span class="hljs-params">req,res</span>)=&gt;</span>{
+    res.writeHead(<span class="hljs-number">301</span>,{
+        <span class="hljs-string">'Location'</span>: <span class="hljs-string">`https://<span class="hljs-subst">${req.headers.host}</span><span class="hljs-subst">${req.url}</span>`</span>
+    })
+    res.end();
+})
+httpServer.listen(<span class="hljs-number">80</span>);
+httpServer.on(<span class="hljs-string">'listening'</span>,()=&gt;{
+    <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'the http server has been listened at port 80'</span>)
+})
+</code></pre>
+<h3>综合代码</h3>
+<pre class=js><code><span class="hljs-keyword">const</span> https = <span class="hljs-built_in">require</span>(<span class="hljs-string">'https'</span>);
+<span class="hljs-keyword">const</span> http = <span class="hljs-built_in">require</span>(<span class="hljs-string">'http'</span>);
+<span class="hljs-keyword">const</span> proxy = <span class="hljs-built_in">require</span>(<span class="hljs-string">'http-proxy'</span>).createProxyServer({});
+<span class="hljs-keyword">const</span> fs = <span class="hljs-built_in">require</span>(<span class="hljs-string">'fs'</span>);
+<span class="hljs-keyword">const</span> options = {
+    <span class="hljs-attr">key</span>: fs.readFileSync(<span class="hljs-string">'./keys/server.key'</span>),
+    <span class="hljs-attr">cert</span>: fs.readFileSync(<span class="hljs-string">'./keys/server.crt'</span>)
+}
+
+<span class="hljs-keyword">const</span> server = https.createServer(options,(req,res)=&gt;{
+    <span class="hljs-keyword">const</span> host = req.headers.host,
+        ip = req.headers[<span class="hljs-string">'x-forwarded-for'</span>] || req.connection.remoteAddress;
+    <span class="hljs-built_in">console</span>.log(<span class="hljs-string">`client ip: <span class="hljs-subst">${ip}</span>`</span>);
+    <span class="hljs-keyword">switch</span>(host){
+        <span class="hljs-keyword">case</span> <span class="hljs-string">'test.localhost'</span>:
+            proxy.web(req,res,{
+                <span class="hljs-attr">target</span>: <span class="hljs-string">'http://localhost:3000'</span>,
+                <span class="hljs-attr">ssl</span>: {
+                    <span class="hljs-attr">key</span>: fs.readFileSync(<span class="hljs-string">'./keys/server.key'</span>, <span class="hljs-string">'utf8'</span>),
+                    <span class="hljs-attr">cert</span>: fs.readFileSync(<span class="hljs-string">'./keys/server.crt'</span>, <span class="hljs-string">'utf8'</span>)
+                }
+            });
+            <span class="hljs-keyword">break</span>;
+        <span class="hljs-keyword">default</span>:
+            res.writeHead(<span class="hljs-number">200</span>);
+            res.end(<span class="hljs-string">'welcome to node https proxy server'</span>);
+    }
+}).listen(<span class="hljs-number">443</span>);
+
+server.on(<span class="hljs-string">'listening'</span>,()=&gt;{
+    <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'https server has been listened at port 8000'</span>);
+})
+
+<span class="hljs-keyword">const</span> httpServer = http.createServer(<span class="hljs-function">(<span class="hljs-params">req,res</span>)=&gt;</span>{
+    <span class="hljs-built_in">console</span>.log(<span class="hljs-string">`the url is <span class="hljs-subst">${req.url}</span>`</span>)
+    res.writeHead(<span class="hljs-number">301</span>,{
+        <span class="hljs-string">'Location'</span>: <span class="hljs-string">`https://<span class="hljs-subst">${req.headers.host}</span><span class="hljs-subst">${req.url}</span>`</span>
+    })
+    res.end()
+})
+
+httpServer.listen(<span class="hljs-number">80</span>);
+httpServer.on(<span class="hljs-string">'listening'</span>,()=&gt;{
+    <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'the http server has been listened at port 80'</span>)
+})
+
+<span class="hljs-keyword">const</span> testServer = http.createServer(<span class="hljs-function">(<span class="hljs-params">req,res</span>)=&gt;</span>{
+    res.writeHead(<span class="hljs-number">200</span>,{
+        <span class="hljs-string">'Content-Type'</span>: <span class="hljs-string">'text/html'</span>
+    });
+    res.end(fs.readFileSync(<span class="hljs-string">'./index.html'</span>));
+}).listen(<span class="hljs-number">3000</span>);
+testServer.on(<span class="hljs-string">'listening'</span>,()=&gt;{
+    <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'the test server has been listened at port 3000'</span>)
+})
+</code></pre>
+<p>将我们的CA证书加入客户端受信任CA证书列表，再访问看看：</p>
+<p><img src="http://7xsi10.com1.z0.glb.clouddn.com/localhostresult.jpg" alt="nice">
+可爱的小绿锁！</p>
+<p>自己充当CA虽然快捷方便，但是客户端并没有信任该CA证书，还得让客户端将你的CA导入才行。这是很伤感的。</p>
+<h1>使用Let's Encrypt免费证书</h1>
+<p>Let's Encrypt是一个开源免费的公钥证书颁发机构，为了促进web https化进程而生。**</p>
+<p>**我这里的环境Centos6 + Nginx</p>
+<h3>安装certbot</h3>
+<pre class=><code>$ wget https://dl.eff.org/certbot-auto
+$ chmod a+x certbot-auto
+$ ./certbot-auto
+</code></pre>
+<h3>配置Nginx</h3>
+<p>Let's Encrypt自助进行颁发证书，需要验证域名所属权限，在申请证书时，Cerbot会在服务器生成随机文件，然后Cerbot服务器会来尝试访问这个随机文件，以此来验证。</p>
+<p>在nginx监听80端口且代理了将要申请证书的域名的server里加匹配路由：</p>
+<pre class=><code>location ^~ /.well-known/acme-challenge/ {
+    default_type &quot;text/plain&quot;;
+    root /usr/local/webserver/nginx/html;
+}
+
+location = /.well-known/acme-challenge/ {
+    return 404;
+}
+</code></pre>
+<p>接着要根据自己的配置在相应目录下新建 **.well-known/acme-challenge/**目录</p>
+<p>如这里的**/usr/local/webserver/nginx/html/.well-known/acme-challenge/**</p>
+<p>重启nginx</p>
+<h3>申请免费证书</h3>
+<p>这里我拿自己的一个子域名做测试:<strong>ppt.luoxia.me</strong></p>
+<pre class=><code>./certbot certonly --webroot -w /usr/local/webserver/nginx/html/ -d ppt.luoxia.me
+</code></pre>
+<p><strong>申请成功</strong>
+<img src="http://7xsi10.com1.z0.glb.clouddn.com/okla.jpg" alt="okla"></p>
+<p>另外注意一个问题，由于Centos 6自带的Python版本是2.6.6，Cerbot不支持，需要升级Python,另外，在申请过程中老是报错：</p>
+<pre class=><code>No matching distribution found for acme==0.12.0
+</code></pre>
+<p>原因是我的阿里云主机里pip是阿里源，解决办法，修改pip源就好了。</p>
+<h3>更新证书</h3>
+<p>申请的免费证书有效期为90天，可以进行更新</p>
+<pre class=><code>./certbot-auto renew --dry-run 
+</code></pre>
+<h1>Nginx  server https部署</h1>
+<p>原理和Node server类似</p>
+<h3>https -&gt; http的反向代理</h3>
+<pre class=><code>upstream ppt {
+    server  localhost:3000;
+}
+server {
+    listen  443 ssl;
+
+    ssl_certificate /etc/letsencrypt/live/ppt.luoxia.me/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/ppt.luoxia.me/privkey.pem;
+    ssl_trusted_certificate /etc/letsencrypt/live/ppt.luoxia.me/chain.pem;
+
+    server_name ppt.luoxia.me;
+    location ^~ /.well-known/acme-challenge/ {
+            default_type &quot;text/plain&quot;;
+            root     /usr/local/webserver/nginx/html;
+    }
+    location = /.well-known/acme-challenge/ {
+            return 404;
+    }
+    location / {
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Host $http_host;
+        proxy_set_header X-NginX-Proxy true;
+        proxy_pass http://ppt/;
+    }
+}
+</code></pre>
+<p>其中ssl_trusted_certificate用于开启OCSP。</p>
+<h3>http服务重定向到https</h3>
+<pre class=><code>server {
+    listen 80;
+    server_name ppt.luoxia.me;
+    rewrite ^(.*)$  https://$host$1 permanent;
+}
+</code></pre>
+<p>部署成功,可爱的小绿锁。
+<img src="http://7xsi10.com1.z0.glb.clouddn.com/httpsnice.jpg" alt="nice https"></p>
+<h1>结束语</h1>
+<p>博客网站托管在github主机上的，所以暂时没法给自己的博客域名升级到https，在移动端访问会被流氓的运营商加广告，找个机会将博客迁移到自己的主机上。</p>
+<p>后面还会有不定期的https系列分享，欢迎大家一起讨论。</p>
+
+    </div>
+  </div>
+
+       
+        <div id="footer">
+            主题提供: <a href="https://github.com/laoqiren/yohe">Yohe</a>
+            Powered By <a href="https://github.com/laoqiren/yohe">Yohe</a>
+            图片存储: <a href="http://www.qiniu.com/">qiniu</a>
+        </div>
+    </div>
+
+    
+    <script>hljs.initHighlightingOnLoad();</script>

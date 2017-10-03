@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="/yohe_site/assets/css/layout.css">
+    
+  <link rel="stylesheet"
+  href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/railscasts.min.css">
+  <link rel="stylesheet" href="/yohe_site/assets/css/post.css"/>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+
+    <title>
+    My Blog
+</title>
+</head>
+<body>
+
+    <div id="container">
+        <div id="nav">
+            <div class="site-header-info">
+                <a href="/yohe_site/">
+                    <img src="https://avatars2.githubusercontent.com/u/16136702?v=4&s=120" width="100" height="100"/>
+                </a>
+                <h1 class="site-title">My Blog</h1>
+                <h2 class="site-description">爱技术，爱生活</h2>
+            </div>
+
+            
+  <div class="post-info">
+    <div class="site-published-separator"></div>
+    <h2 class="site-published">Published</h2>
+    <h2 class="site-publish-date">2017-03-16</h2>
+  </div>
+ 
+        </div>
+
+        
+  <div class="post-content">
+    <div class="post-header">
+      <h2 class="post-cate">in Haskell</h2>
+      <h1>Haskell类型系统</h1>
+    </div>
+    <div class="post-content">
+        <p>这篇文章主要总结Haskell的类型系统。文章参照《Learn you a Haskell》。</p>
+<!--more-->
+<h2>表达式类型</h2>
+<p>Int,Integer,Float,Double,Bool,Char,[]中各个项类型必须相同，()的类型跟其中的每一个元素的类型相关，只有每个元素对应类型相同，元素数目相同的两个Tuple类型才相同。</p>
+<p>函数同样有类型声明。类型必须以大写开头。</p>
+<h2>类型参数</h2>
+<p>如<code>head</code>函数: <code>head :: [a] -&gt; a</code>，表示与具体类型无关</p>
+<h2>typeclass</h2>
+<p>如 <code>(==) :: Eq a =&gt; a -&gt; a -&gt; Bool</code>可以看到类型类约束<code>Eq a</code>,相当于interface定义行为</p>
+<p>常见typeclass:</p>
+<p>Eq:可判断相等性；Ord：可比较大小（必须先加入Eq)；Show：可以用字符串表示，Read：可以将一个字符串转换成某成员类型。（对于<code>read &quot;4&quot;</code>这种要加入类型注释:<code>read &quot;4&quot;::Int</code>）；Enum:可枚举，如<code>['a'..'e']</code>；Bounded:有一个上限和下限<code>minBound :: Int</code>: <code>-2147483648</code>；Num:具有数字特征，包含所有数字，如 <code>:t (*)</code>:<code>(*) :: (Num a) =&gt; a -&gt; a -&gt; a</code>；Integral:仅饱含整数，成员有:Int, Integer；Floating:仅包含Float,Double。</p>
+<p>一个有用的函数<code>fromIntegral</code>：用于将Integral typeclass成员转换成更通用的<code>Num</code>　typeclass成员:
+<code>fromIntegral :: (Num b, Integral a) =&gt; a -&gt; b</code>，比如我们求一个List的length,再加上一个Float，就会报错，因为<code>length :: [a] -&gt; Int</code>，我们可以<code>fromIntegral (length [1,2,3,4]) + 3.2</code>来解决。</p>
+<h2>构造自己的Types和Typeclasses</h2>
+<h3>ADT（代数数据类型）</h3>
+<p>如Bool:<code>data Bool = False | True</code>,False,True就是值构造子，更复杂的例子:</p>
+<pre class=haskell><code><span class="hljs-class"><span class="hljs-keyword">data</span> <span class="hljs-type">Shape</span> = <span class="hljs-type">Circle</span> <span class="hljs-type">Float</span> <span class="hljs-type">Float</span> <span class="hljs-type">Float</span> | <span class="hljs-type">Rectangle</span> <span class="hljs-type">Float</span> <span class="hljs-type">Float</span> <span class="hljs-type">Float</span> <span class="hljs-type">Float</span></span>
+</code></pre>
+<p>其中Circle,Rectangle两个值构造子后面跟着三项，实际为参数，因为值构造子相当于函数，如<code>Circle :: Float -&gt; Float -&gt; Float -&gt; Shape</code></p>
+<p>通过<code>deriving</code>将类型派生为指定<code>typeclass</code>的成员</p>
+<p>ADT的每个值构造子的每个参数必须有具体类型</p>
+<h3>Record Syntax</h3>
+<p>例如表示一个人的type:</p>
+<pre class=haskell><code><span class="hljs-class"><span class="hljs-keyword">data</span> <span class="hljs-type">Person</span> = <span class="hljs-type">Person</span> <span class="hljs-type">String</span> <span class="hljs-type">String</span> <span class="hljs-type">Int</span> <span class="hljs-type">Float</span> <span class="hljs-type">String</span> <span class="hljs-type">String</span> <span class="hljs-keyword">deriving</span> (<span class="hljs-type">Show</span>)</span>
+</code></pre>
+<p>分别表示firstName,lastName等等，我们要获取这些firstName啥的，还得这样:</p>
+<pre class=haskell><code><span class="hljs-title">firstName</span> :: <span class="hljs-type">Person</span> -&gt; <span class="hljs-type">String</span>
+<span class="hljs-title">firstName</span> (<span class="hljs-type">Person</span> firstname _ _ _ _ _) = firstname
+</code></pre>
+<p>显然麻烦，而解决方案:</p>
+<pre class=haskell><code><span class="hljs-class"><span class="hljs-keyword">data</span> <span class="hljs-type">Person</span> = <span class="hljs-type">Person</span> { <span class="hljs-title">firstName</span> :: <span class="hljs-type">String</span>
+                     , <span class="hljs-title">lastName</span> :: <span class="hljs-type">String</span>
+                     , <span class="hljs-title">age</span> :: <span class="hljs-type">Int</span>
+                     , <span class="hljs-title">height</span> :: <span class="hljs-type">Float</span>
+                     , <span class="hljs-title">phoneNumber</span> :: <span class="hljs-type">String</span>
+                     , <span class="hljs-title">flavor</span> :: <span class="hljs-type">String</span>
+                     } <span class="hljs-keyword">deriving</span> (<span class="hljs-type">Show</span>)</span>
+</code></pre>
+<p>即自动创建了这些取值函数，如<code>firstName :: Person -&gt; String</code></p>
+<h3>Type parameters</h3>
+<p>如<code>data Maybe a = Nothing | Just a</code>，<code>a</code>就是类型参数，这有点类似于C++的类模板，a可以是任意type。<code>Maybe</code>只是一个类型构造子，最终的type是根据a来的,如 <code>Just &quot;hey&quot; :: Maybe [Char]</code>。还有如<code>[]</code>，同样可以根据类型参数的实际type来构造不同的type：<code>[Char],[Int]</code>等。这种情况<code>read</code>的时候要加入完整的类型注释:<code>read &quot;Just 't'&quot; :: Maybe Char</code></p>
+<p>永远不给类型参数加typeclass约束</p>
+<p>类型构造子和值构造子的区分是相当重要的。在声明数据类型时，等号=左端的那个是类型构造子，右端的(中间可能有|分隔)都是值构造子。</p>
+<h3>Derived instances</h3>
+<p>派生为指定typeclass的成员，如</p>
+<pre class=haskell><code><span class="hljs-class"><span class="hljs-keyword">data</span> <span class="hljs-type">Day</span> = <span class="hljs-type">Monday</span> | <span class="hljs-type">Tuesday</span> | <span class="hljs-type">Wednesday</span> | <span class="hljs-type">Thursday</span> | <span class="hljs-type">Friday</span> | <span class="hljs-type">Saturday</span> | <span class="hljs-type">Sunday</span></span>
+           <span class="hljs-keyword">deriving</span> (<span class="hljs-type">Eq</span>, <span class="hljs-type">Ord</span>, <span class="hljs-type">Show</span>, <span class="hljs-type">Read</span>, <span class="hljs-type">Bounded</span>, <span class="hljs-type">Enum</span>)
+</code></pre>
+<p>可以:</p>
+<pre class=><code>[Thursday .. Sunday]
+[Thursday,Friday,Saturday,Sunday]
+
+[minBound .. maxBound] :: [Day]
+[Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday]
+</code></pre>
+<h3>Type synonyms</h3>
+<p>类型同义词:<code>type String = [Char]</code></p>
+<h3>Recursive data structures (递归地定义数据结构)</h3>
+<p>比如一个List:<code>5:6:8:[]</code>即[5,6,8]：</p>
+<pre class=haskell><code><span class="hljs-keyword">infixr</span> <span class="hljs-number">5</span> :-:
+<span class="hljs-class"><span class="hljs-keyword">data</span> <span class="hljs-type">List</span> a = <span class="hljs-type">Empty</span> | a :-: (<span class="hljs-type">List</span> <span class="hljs-title">a</span>) <span class="hljs-keyword">deriving</span> (<span class="hljs-type">Show</span>, <span class="hljs-type">Read</span>, <span class="hljs-type">Eq</span>, <span class="hljs-type">Ord</span>)</span>
+</code></pre>
+<p>再比如一个二叉树：</p>
+<pre class=haskell><code><span class="hljs-class"><span class="hljs-keyword">data</span> <span class="hljs-type">BinaryTree</span> a = <span class="hljs-type">Node</span> a (<span class="hljs-type">BinaryTree</span> <span class="hljs-title">a</span>) (<span class="hljs-type">BinaryTree</span> <span class="hljs-title">a</span>)</span>
+                  | <span class="hljs-type">Empty</span>
+                  <span class="hljs-keyword">deriving</span> (<span class="hljs-type">Show</span>)
+
+<span class="hljs-title">simpleTree</span> = <span class="hljs-type">Node</span> <span class="hljs-string">"parent"</span> (<span class="hljs-type">Node</span> <span class="hljs-string">"left child"</span> <span class="hljs-type">Empty</span> <span class="hljs-type">Empty</span>)
+                           (<span class="hljs-type">Node</span> <span class="hljs-string">"right child"</span> <span class="hljs-type">Empty</span> <span class="hljs-type">Empty</span>)
+</code></pre>
+<h3>构造自己的typeclass和type instance</h3>
+<p>定义typeclass，如<code>Eq</code>:</p>
+<pre class=haskell><code><span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-type">Eq</span> a <span class="hljs-keyword">where</span></span>
+    (==) :: a -&gt; a -&gt; <span class="hljs-type">Bool</span>
+    (/=) :: a -&gt; a -&gt; <span class="hljs-type">Bool</span>
+    x == y = not (x /= y)
+    x /= y = not (x == y)
+</code></pre>
+<p>可以看到<code>==</code>和<code>x /= y</code>相互依赖定义，这样使得<code>Eq</code>的<code>minimal complete definition</code>成了<code>==</code>和<code>/=</code>其中一个，即只需要定义其中一个就能完整定义出<code>Eq</code>的instance了。比如:</p>
+<pre class=haskell><code><span class="hljs-class"><span class="hljs-keyword">data</span> <span class="hljs-type">TrafficLight</span> = <span class="hljs-type">Red</span> | <span class="hljs-type">Yellow</span> | <span class="hljs-type">Green</span></span>
+<span class="hljs-class"><span class="hljs-keyword">instance</span> <span class="hljs-type">Eq</span> <span class="hljs-type">TrafficLight</span> <span class="hljs-keyword">where</span></span>
+    <span class="hljs-type">Red</span> == <span class="hljs-type">Red</span> = <span class="hljs-type">True</span>
+    <span class="hljs-type">Green</span> == <span class="hljs-type">Green</span> = <span class="hljs-type">True</span>
+    <span class="hljs-type">Yellow</span> == <span class="hljs-type">Yellow</span> = <span class="hljs-type">True</span>
+    _ == _ = <span class="hljs-type">False</span>
+</code></pre>
+<p>还可以定义sub typeclass:</p>
+<pre class=haskell><code><span class="hljs-class"><span class="hljs-keyword">instance</span> (<span class="hljs-type">Eq</span> <span class="hljs-title">m</span>) =&gt; <span class="hljs-type">Eq</span> (<span class="hljs-type">Maybe</span> <span class="hljs-title">m</span>) <span class="hljs-keyword">where</span></span>
+    <span class="hljs-type">Just</span> x == <span class="hljs-type">Just</span> y = x == y
+    <span class="hljs-type">Nothing</span> == <span class="hljs-type">Nothing</span> = <span class="hljs-type">True</span>
+    _ == _ = <span class="hljs-type">False</span>
+</code></pre>
+<h3>Kind</h3>
+<p>用于类型的类型。对于有类型参数的构造子如<code>Maybe a = Nothing | Just a</code>这种，<code>:k Maybe</code>就是:<code>*-&gt;*</code>即接受一个具体类型返回一个具体类型。</p>
+<p>这里具体类型指有具体形态的，比如一个函数的类型声明:<code>:k Int -&gt; Int</code>结果是<code>*</code>，因为这是个具体的类型。对于没有类型参数的构造子，如<code>:k Int</code>结果就是<code>*</code></p>
+<p>类型构造子可以做curry:<code>:k Either String</code>结果是<code>Either String :: * -&gt; *</code>。</p>
+<p>就比如定义Functor的instance的时候，就必须接受一个<code>* -&gt; *</code>类型&gt;。</p>
+<p>Functor:</p>
+<pre class=haskell><code><span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-type">Functor</span> f <span class="hljs-keyword">where</span></span>
+    fmap :: (a -&gt; b) -&gt; f a -&gt; f b
+</code></pre>
+<p>看看这个类型:</p>
+<pre class=haskell><code><span class="hljs-class"><span class="hljs-keyword">data</span> <span class="hljs-type">Barry</span> t k p = <span class="hljs-type">Barry</span> { <span class="hljs-title">yabba</span> :: <span class="hljs-title">p</span>, <span class="hljs-title">dabba</span> :: <span class="hljs-title">t</span> <span class="hljs-title">k</span> }</span>
+</code></pre>
+<p><code>Barry :: (* -&gt; *) -&gt; * -&gt; * -&gt; *</code></p>
+<p>要想它成为functor，就必须:</p>
+<pre class=haskell><code><span class="hljs-class"><span class="hljs-keyword">instance</span> <span class="hljs-type">Functor</span> (<span class="hljs-type">Barry</span> <span class="hljs-title">a</span> <span class="hljs-title">b</span>) <span class="hljs-keyword">where</span></span>
+    fmap f (<span class="hljs-type">Barry</span> {yabba = x, dabba = y}) = <span class="hljs-type">Barry</span> {yabba = f x, dabba = y}
+</code></pre>
+<p>因为<code>Barry a b</code>的Kind这个时候就是<code>* -&gt; *</code>。</p>
+<h3>关键字&quot;newtype&quot;</h3>
+<p>将现有类型包装为新的类型。</p>
+<p>比如对于<code>ZipList</code>:</p>
+<pre class=haskell><code><span class="hljs-class"><span class="hljs-keyword">newtype</span> <span class="hljs-type">ZipList</span> a = <span class="hljs-type">ZipList</span> {<span class="hljs-title">getZipList</span> :: [<span class="hljs-title">a</span>]}</span>
+</code></pre>
+<p>不过是将<code>[]</code>进行了包装，而这么做的意义是，因为对原有类型的包装得来的新类型不会自动成为原类型定义的那些typeclass的instance。比如原有<code>[]</code>对于<code>Applicative instance</code>的<code>&lt;*&gt;</code>实现是一种交叉结合的方式，如果需要换种方式实现，就可以用我们的新的类型<code>ZipList</code>。</p>
+<p>On newtype laziness</p>
+<pre class=haskell><code><span class="hljs-class"><span class="hljs-keyword">newtype</span> <span class="hljs-type">CoolBool</span> = <span class="hljs-type">CoolBool</span> {<span class="hljs-title">getCoolBool</span> :: <span class="hljs-type">Bool</span>}</span>
+
+<span class="hljs-title">helloMe</span> :: <span class="hljs-type">CoolBool</span> -&gt; <span class="hljs-type">String</span>
+<span class="hljs-title">helloMe</span> (<span class="hljs-type">CoolBool</span> _) = <span class="hljs-string">"hello"</span>
+</code></pre>
+<p>然后我们<code>helloMe undefined</code>结果正常为&quot;hello&quot;,不同于<code>data</code>定义的时候抛出错误。</p>
+<p>因为这里进行模式匹配的时候不用进行值构造子的计算。当我们使用 newtype 的时候，Haskell 内部可以将新的类型用旧的类型来表示。他不必加入另一层 box 来包住旧有的类型。他只要注意他是不同的类型就好了。而且 Haskell 会知道 newtype 定义的类型一定只会有一个构造子，他不必计算喂给函数的值就能确定他是 (CoolBool _) 的形式，因为 newtype 只有一个可能的值跟单一字段！</p>
+<h2>关于多态</h2>
+<p>与其他语言进行对比总结。</p>
+<p>C++中：
+多态分为编译时多态（静态多态）和运行时多态（动态多态），而真正意义上的多态实际上只有运行时多态，通过虚函数和继承实现，即属于晚绑定，在运行时函数调用地址才能确定。</p>
+<p>针对编译时多态，有模板，函数（操作符）重载(即Ad-hoc多态），模板特化，Duck Typing。</p>
+<p>运行时多态：<a href="http://blog.csdn.net/hackbuteer1/article/details/7475622">http://blog.csdn.net/hackbuteer1/article/details/7475622</a></p>
+<p>haskell中：</p>
+<p><strong>参数化多态：</strong></p>
+<p>Prelude&gt; :type last
+last :: [a] -&gt; a</p>
+<p>可以看到last函数的类型签名包含类型变量，不在意具体的类型，对应C++的模板（函数模板，类模板）即泛型实现</p>
+<p><strong>ad-hoc多态：</strong>
+这里的ad-hoc多态与C++有一定区别，因为在haskell中通过type class来实现，而type class又类似于C++的虚函数，每个instance对type class定义的函数都有自己的实现。这勉强叫做“函数重载”，这或许就是它被称为ad-hoc多态的原因。而在C++中ad-hoc多态和虚函数多态完全不一样的。</p>
+<h2>其他</h2>
+<p>实践过程中经常碰到类型转换问题，由于强类型的原因，遇到了很多麻烦，这里占个坑，需要补充这方面的解决方案。</p>
+<p><img src="http://upload-images.jianshu.io/upload_images/1023733-27c30ca1b9b1af69.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt="http://upload-images.jianshu.io/upload_images/1023733-27c30ca1b9b1af69.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240"></p>
+<h3>数值类型转换：</h3>
+<h2>总结</h2>
+<p>Haskell有一套强大的类型系统，虽然是functional,OO的有些思想却在其中有一些体现。</p>
+<p>详情参考书籍<a href="https://learnyoua.haskell.sg/content/zh-cn">https://learnyoua.haskell.sg/content/zh-cn</a></p>
+
+    </div>
+  </div>
+
+       
+        <div id="footer">
+            主题提供: <a href="https://github.com/laoqiren/yohe">Yohe</a>
+            Powered By <a href="https://github.com/laoqiren/yohe">Yohe</a>
+            图片存储: <a href="http://www.qiniu.com/">qiniu</a>
+        </div>
+    </div>
+
+    
+    <script>hljs.initHighlightingOnLoad();</script>

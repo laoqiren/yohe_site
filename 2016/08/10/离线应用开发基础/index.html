@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="/yohe_site/assets/css/layout.css">
+    
+  <link rel="stylesheet"
+  href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/railscasts.min.css">
+  <link rel="stylesheet" href="/yohe_site/assets/css/post.css"/>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+
+    <title>
+    My Blog
+</title>
+</head>
+<body>
+
+    <div id="container">
+        <div id="nav">
+            <div class="site-header-info">
+                <a href="/yohe_site/">
+                    <img src="https://avatars2.githubusercontent.com/u/16136702?v=4&s=120" width="100" height="100"/>
+                </a>
+                <h1 class="site-title">My Blog</h1>
+                <h2 class="site-description">爱技术，爱生活</h2>
+            </div>
+
+            
+  <div class="post-info">
+    <div class="site-published-separator"></div>
+    <h2 class="site-published">Published</h2>
+    <h2 class="site-publish-date">2016-08-10</h2>
+  </div>
+ 
+        </div>
+
+        
+  <div class="post-content">
+    <div class="post-header">
+      <h2 class="post-cate">in HTML5</h2>
+      <h1>离线应用开发基础</h1>
+    </div>
+    <div class="post-content">
+        <h5>所谓离线web应用就是设备在断网的情况下能够正常运行的应用，这也是html5规范的一个重点。要开发一款离线的web应用，需要哪些条件和步骤呢？</h5>
+<ol>
+<li>离线检测，可以检测设备是否联网来采取不同的策略</li>
+<li>需要提供本地缓存相关API,让用户联网时对一些必要资源进行本地缓存，如图片，css样式等文件</li>
+<li>需要提供本地数据储存API，来储存一些必要用户数据</li>
+</ol>
+<h5>HTML5提供了强大的API来支持这些要求：</h5>
+<ol>
+<li>navigator对象的onLine属性判断联网状态，并提供online,offline事件用于检测状态改变</li>
+<li>提供本地缓存（application cache)机制缓存必要数据</li>
+<li>提供WebStorage储存简单的key/value数据，提供本地数据库（包括SQLLite和IndexdDB，前者为SQL数据库，后者为NoSQL型数据库)</li>
+</ol>
+<!--more-->
+<h3>联网状态检测</h3>
+<p><strong>navigator.online属性</strong></p>
+<pre class=js><code><span class="hljs-keyword">if</span>(navigator.online){
+	<span class="hljs-built_in">console</span>.log(<span class="hljs-string">'客户端联网'</span>);
+} <span class="hljs-keyword">else</span> {
+	<span class="hljs-built_in">console</span>.log(<span class="hljs-string">'断线'</span>);
+}
+</code></pre>
+<p><strong>online和offline事件</strong></p>
+<pre class=js><code><span class="hljs-built_in">window</span>.addEventListener(<span class="hljs-string">'online'</span>,<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>)</span>{
+	alert(<span class="hljs-string">'offLine to onLine'</span>);
+},<span class="hljs-literal">false</span>);
+<span class="hljs-built_in">window</span>.addEventListener(<span class="hljs-string">'offline'</span>,<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>)</span>{
+	alert(<span class="hljs-string">'onLine to offLine'</span>);
+},flse);
+</code></pre>
+<h3>本地应用缓存</h3>
+<h4>本地缓存和网页缓存区别：</h4>
+<ol>
+<li>本地缓存为整个web应用服务，网页缓存服务员单个网页</li>
+<li>本地缓存更安全可靠可控，可指定缓存特定文件，并可以通过编程手段对缓存进行更新等。</li>
+</ol>
+<h4>manifest文件</h4>
+<p>应用的本地缓存通过页面的manifest文件进行管理，可以为每个页面指定特定的manifest,也可以指定全局的manifest:</p>
+<pre class=html><code>	<span class="hljs-tag">&lt;<span class="hljs-name">html</span> <span class="hljs-attr">manifest</span>=<span class="hljs-string">'myCache.manifest'</span> <span class="hljs-attr">lang</span>=<span class="hljs-string">'en'</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">html</span>&gt;</span>
+</code></pre>
+<p><strong>manifest文件示例</strong></p>
+<pre class=><code>CACHE MANIFEST
+#必须以上述行开头
+#version 1.02
+CACHE:
+js/script.js
+style/main.css
+NETWORK
+*
+#NETWORK指定只有在联网状态时才能访问的资源,*表示出了CACHE指定资源
+FALLBACK
+newIndex1.html
+newInde2.html
+#FALLBACK两行分别指定联网和断线状态下访问的资源
+</code></pre>
+<h4>简述浏览器请求数据过程：</h4>
+<p>以www.luoxia520.com/code为例：
+<strong>首次访问</strong></p>
+<ol>
+<li>访问www.luoxia520.com/code</li>
+<li>返回index.html文件</li>
+<li>请求相关资源，如图片样式，manifest等</li>
+<li>服务器返回资源</li>
+<li>处理manifest,请求该文件要求缓存的资源</li>
+<li>服务器返回缓存资源</li>
+<li>本地缓存更新，触发事件通知更新</li>
+</ol>
+<p><strong>再次访问</strong></p>
+<ol>
+<li>再次访问www.luoxia520.com/code</li>
+<li>发现index.html被缓存,使用缓存的inde.html</li>
+<li>使用本地缓存的资源</li>
+<li>请求服务器返回manifest</li>
+<li>如果manifest有更新，则走上述5,6,7路线，若没有更新则通知没有变化</li>
+</ol>
+<h4>applicationCache对象</h4>
+<p><strong>updateready事件</strong></p>
+<p>当检测到服务端返回的manifest文件更新,下载manifest所要求缓存资源到本地后触发这个事件</p>
+<p><strong>swapCache方法</strong></p>
+<p>有时候缓存资源太大，更新时间可能较长，我们可以在updateready事件触发式，手动更新本地缓存，然后提示用户刷新页面或者自动刷新页面：</p>
+<p><strong>update方法</strong></p>
+<p>检测服务端manifest文件是否更新，若更新则下载缓存资源，触发updateReady事件</p>
+<pre class=js><code>setInterval(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>)</span>{
+	application.update();
+},<span class="hljs-number">500</span>);
+applicationCache.onUpdateReady = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>)</span>{
+	applicationonCache.swapCache();
+	<span class="hljs-keyword">if</span>(confirm(<span class="hljs-string">'本地缓存已更新，是否刷新获取最新应用版本'</span>)){
+		location.reload();
+	}
+};
+</code></pre>
+<h4>注意事项</h4>
+<ol>
+<li>本地缓存更新后，页面元素并不会立即更新，需要手动或自动刷新页面</li>
+<li>当资源文件发生变化但manifest文件并没有变化时，页面并不会发生任何变化，除非更新manifest文件，这个时候可以通过更改版本号的方式实现manifest更新</li>
+</ol>
+<h3>本地数据储存</h3>
+<h4>Web Storage</h4>
+<p>Web Storage是对HTML4中cookie机制的改善，包括<strong>sessionStorage</strong>和<strong>localStorage</strong>两种，前者临时保存（进入网页到关闭浏览器），后者为永久保存。</p>
+<p>两者都是对简单的key/value形式的数据进行存取。</p>
+<p><strong>存入数据</strong></p>
+<pre class=js><code>sessionStorage.setItem(<span class="hljs-string">'key'</span>,<span class="hljs-string">'value'</span>);
+<span class="hljs-comment">//or </span>
+sessionStorage.key = <span class="hljs-string">'value'</span>;
+
+<span class="hljs-comment">//同理</span>
+localStorage.setItem(<span class="hljs-string">'key'</span>,<span class="hljs-string">'value'</span>);
+<span class="hljs-comment">//or </span>
+localStorage.key = <span class="hljs-string">'value'</span>;
+
+</code></pre>
+<p><strong>读取数据</strong></p>
+<pre class=js><code>sessionStorage.getItem(<span class="hljs-string">'key'</span>);
+<span class="hljs-comment">//or</span>
+sessionStorage.key;
+</code></pre>
+<p><strong>清除数据</strong></p>
+<pre class=js><code>localStorage.clear();
+</code></pre>
+<p><strong>storage事件监听web storage变化</strong></p>
+<pre class=js><code><span class="hljs-built_in">window</span>.onstorage = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>)</span>{
+	<span class="hljs-comment">//web storage发生变化</span>
+}
+</code></pre>
+<h4>本地数据库</h4>
+<p>HTML5提供了强大的本地数据库功能，丰富了本地储存内容，这样可以减轻服务器负担，使得web时代重回&quot;客户端为重，服务端为轻&quot;的时代。</p>
+<p>本地数据可分为两种，一种是SQLLite,通过SQL语言访问，另一种是NoSQL型数据库indexdDB</p>
+<h5>SQLLite</h5>
+<p><strong>创建数据库对象</strong></p>
+<pre class=js><code><span class="hljs-keyword">let</span> db = openDatabase(<span class="hljs-string">'mydb'</span>,<span class="hljs-string">'1.0'</span>,<span class="hljs-string">'Test'</span>,<span class="hljs-number">102400</span>);
+</code></pre>
+<p>接受参数：数据库名，版本，描述字符串，大小（单位为kb)</p>
+<p><strong>事务处理</strong></p>
+<p>transaction方法用于执行事务处理，以防止外界干扰</p>
+<pre class=js><code>db.transaction(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">tx</span>)</span>{
+	tx.executeSql(<span class="hljs-string">'CREATE TABLE IF NOT EXISTS MessageData(message TEXT)'</span>);
+});
+<span class="hljs-comment">// db的transaction方法存入回调函数，transaction对象作为其参数，在这个对象上可以调用executeSql方法。</span>
+</code></pre>
+<p><strong>executeSql方法</strong></p>
+<pre class=js><code>transaction.executeSql(sqlquery,[],datahandler,errorHandler);
+</code></pre>
+<p>四个参数，SQL语句，其中变量用?代替，[]为与之对应的变量组成的数组，执行成功的回调和失败的回调。</p>
+<p><strong>常用的SQL语句</strong></p>
+<ol>
+<li>CREATE TABLE name(key type, key type ....):创建表，name为表名，key为键名，type为该键的值类型,注：对于已经存在的表重复创建会报错，可以通过CREATE TABLE IF NOT EXISTS来检测当不存在时创建</li>
+<li>SELECT * FROM name: 选择指定表中的数据，*表示所有</li>
+<li>INSERT INTO name VALUES(?,?,?):插入数据到指定的表</li>
+</ol>
+<p><strong>一个关于Web SQL的实例（web留言本)</strong></p>
+<p>index.html:</p>
+<pre class=html><code><span class="hljs-tag">&lt;<span class="hljs-name">form</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">label</span> <span class="hljs-attr">for</span>=<span class="hljs-string">'name'</span>&gt;</span>姓名:<span class="hljs-tag">&lt;<span class="hljs-name">input</span> <span class="hljs-attr">type</span>=<span class="hljs-string">'text'</span> <span class="hljs-attr">id</span>=<span class="hljs-string">'name'</span>/&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">label</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">label</span> <span class="hljs-attr">for</span>=<span class="hljs-string">'year'</span>&gt;</span>年龄：<span class="hljs-tag">&lt;<span class="hljs-name">input</span> <span class="hljs-attr">type</span>=<span class="hljs-string">'text'</span> <span class="hljs-attr">id</span>=<span class="hljs-string">'year'</span>/&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">label</span>&gt;</span><span class="hljs-tag">&lt;<span class="hljs-name">br</span>/&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">textarea</span> <span class="hljs-attr">cols</span>=<span class="hljs-string">80</span> <span class="hljs-attr">rows</span>=<span class="hljs-string">10</span> <span class="hljs-attr">id</span>=<span class="hljs-string">'message'</span>&gt;</span>
+    <span class="hljs-tag">&lt;/<span class="hljs-name">textarea</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">input</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"button"</span> <span class="hljs-attr">value</span>=<span class="hljs-string">'保存'</span> <span class="hljs-attr">id</span>=<span class="hljs-string">'save'</span>/&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">form</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">table</span> <span class="hljs-attr">id</span>=<span class="hljs-string">'dataTable'</span> <span class="hljs-attr">border</span>=<span class="hljs-string">1</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">table</span>&gt;</span>
+</code></pre>
+<p>main.js:</p>
+<pre class=js><code><span class="hljs-built_in">window</span>.onload = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>)</span>{
+    <span class="hljs-keyword">var</span> dataTable = <span class="hljs-built_in">document</span>.getElementById(<span class="hljs-string">'dataTable'</span>);
+    <span class="hljs-keyword">var</span> db = openDatabase(<span class="hljs-string">'myData'</span>,<span class="hljs-string">''</span>,<span class="hljs-string">'the local database'</span>,<span class="hljs-number">102400</span>);
+    <span class="hljs-keyword">var</span> save = <span class="hljs-built_in">document</span>.getElementById(<span class="hljs-string">'save'</span>);
+    save.onclick = saveData;
+    init();
+
+
+    <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">init</span>(<span class="hljs-params"></span>)</span>{
+        showAllData();
+    }
+    <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">removeAllData</span>(<span class="hljs-params"></span>)</span>{
+        dataTable.innerHTML = <span class="hljs-string">''</span>;
+        <span class="hljs-keyword">var</span> tr = <span class="hljs-built_in">document</span>.createElement(<span class="hljs-string">'tr'</span>),
+            th1 = <span class="hljs-built_in">document</span>.createElement(<span class="hljs-string">'td'</span>),
+            th2 = <span class="hljs-built_in">document</span>.createElement(<span class="hljs-string">'td'</span>),
+            th3 = <span class="hljs-built_in">document</span>.createElement(<span class="hljs-string">'td'</span>),
+            th4 = <span class="hljs-built_in">document</span>.createElement(<span class="hljs-string">'td'</span>);
+
+        th1.innerHTML = <span class="hljs-string">'姓名'</span>;
+        th2.innerHTML = <span class="hljs-string">'年龄'</span>;
+        th3.innerHTML = <span class="hljs-string">'时间'</span>;
+        th4.innerHTML = <span class="hljs-string">'消息'</span>;
+        tr.appendChild(th1);
+        tr.appendChild(th2);
+        tr.appendChild(th3);
+        tr.appendChild(th4);
+
+        dataTable.appendChild(tr);
+    }
+    <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">showData</span>(<span class="hljs-params">row</span>)</span>{
+        <span class="hljs-keyword">var</span> tr = <span class="hljs-built_in">document</span>.createElement(<span class="hljs-string">'tr'</span>),
+            td1 = <span class="hljs-built_in">document</span>.createElement(<span class="hljs-string">'td'</span>),
+            td2 = <span class="hljs-built_in">document</span>.createElement(<span class="hljs-string">'td'</span>),
+            td3 = <span class="hljs-built_in">document</span>.createElement(<span class="hljs-string">'td'</span>),
+            td4 = <span class="hljs-built_in">document</span>.createElement(<span class="hljs-string">'td'</span>);
+
+            td1.innerHTML = row.name;
+            td2.innerHTML = row.year;
+            td4.innerHTML = row.message;
+            <span class="hljs-keyword">var</span> t = <span class="hljs-keyword">new</span> <span class="hljs-built_in">Date</span>();
+            t.setTime(row.time);
+            td3.innerHTML = t.toLocaleDateString() + <span class="hljs-string">' '</span> + t.toLocaleTimeString();
+
+            tr.appendChild(td1);
+            tr.appendChild(td2);
+            tr.appendChild(td3);
+            tr.appendChild(td4);
+
+            dataTable.appendChild(tr);
+    }
+    <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">showAllData</span>(<span class="hljs-params"></span>)</span>{
+        db.transaction(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">tx</span>)</span>{
+            tx.executeSql(<span class="hljs-string">'CREATE TABLE IF NOT EXISTS MsgData(name TEXT, year TEXT, time INTEGER, message TEXT)'</span>,[]);
+            tx.executeSql(<span class="hljs-string">'SELECT * FROM MsgData'</span>,[],<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">tx,rs</span>)</span>{
+                removeAllData();
+                <span class="hljs-keyword">for</span>(<span class="hljs-keyword">let</span> i=<span class="hljs-number">0</span>; i&lt;rs.rows.length; i++){
+                    showData(rs.rows.item(i));
+                }
+            });
+        });
+    }
+    <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">addData</span>(<span class="hljs-params">name,year,time,message</span>)</span>{
+        db.transaction(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">tx</span>)</span>{
+            tx.executeSql(<span class="hljs-string">'INSERT INTO MsgData VALUES(?,?,?,?)'</span>,[name,year,time,message],<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">tx,rs</span>)</span>{
+                alert(<span class="hljs-string">'数据保存成功'</span>);
+            });
+        });
+    }
+    <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">saveData</span>(<span class="hljs-params"></span>)</span>{
+        <span class="hljs-keyword">var</span> name = <span class="hljs-built_in">document</span>.getElementById(<span class="hljs-string">'name'</span>).value;
+        <span class="hljs-keyword">var</span> year = <span class="hljs-built_in">document</span>.getElementById(<span class="hljs-string">'year'</span>).value;
+        <span class="hljs-keyword">var</span> msg = <span class="hljs-built_in">document</span>.getElementById(<span class="hljs-string">'message'</span>).value;
+        <span class="hljs-keyword">var</span> time = <span class="hljs-keyword">new</span> <span class="hljs-built_in">Date</span>().getTime();
+        addData(name,year,time,msg);
+        showAllData();
+    }
+};
+</code></pre>
+<p>最终效果如下:</p>
+<p><img src="http://7xsi10.com1.z0.glb.clouddn.com/webSQL.png" alt="webSql1"></p>
+<p><img src="http://7xsi10.com1.z0.glb.clouddn.com/webSQL2.png" alt="webSql2"></p>
+<h5>indexedDB</h5>
+
+    </div>
+  </div>
+
+       
+        <div id="footer">
+            主题提供: <a href="https://github.com/laoqiren/yohe">Yohe</a>
+            Powered By <a href="https://github.com/laoqiren/yohe">Yohe</a>
+            图片存储: <a href="http://www.qiniu.com/">qiniu</a>
+        </div>
+    </div>
+
+    
+    <script>hljs.initHighlightingOnLoad();</script>

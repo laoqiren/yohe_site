@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="/yohe_site/assets/css/layout.css">
+    
+  <link rel="stylesheet"
+  href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/railscasts.min.css">
+  <link rel="stylesheet" href="/yohe_site/assets/css/post.css"/>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+
+    <title>
+    My Blog
+</title>
+</head>
+<body>
+
+    <div id="container">
+        <div id="nav">
+            <div class="site-header-info">
+                <a href="/yohe_site/">
+                    <img src="https://avatars2.githubusercontent.com/u/16136702?v=4&s=120" width="100" height="100"/>
+                </a>
+                <h1 class="site-title">My Blog</h1>
+                <h2 class="site-description">爱技术，爱生活</h2>
+            </div>
+
+            
+  <div class="post-info">
+    <div class="site-published-separator"></div>
+    <h2 class="site-published">Published</h2>
+    <h2 class="site-publish-date">2016-03-12</h2>
+  </div>
+ 
+        </div>
+
+        
+  <div class="post-content">
+    <div class="post-header">
+      <h2 class="post-cate">in 项目总结</h2>
+      <h1>微信订座系统项目总结</h1>
+    </div>
+    <div class="post-content">
+        <p>不管学什么，到最后必须要通过实践的检验，开发也是如此，正如邓小平同志的一句：<strong>实践是检验真理的唯一标准</strong>,在实战中的进步是最大的，这是第一次正式地外包项目，是中国美院的一个关于课堂微信订座项目，本身并没有什么经验，更何况移动端，这次项目主要是大致的了解一下一款产品上线的流程吧，当然也有一些编码上的总结。希望在后面能够通过更多的实战项目来锻炼自己。</p>
+  <!--more-->
+<h3>一．项目整体流程</h3>
+<pre><code>1. 分析用户需求，产品功能
+2. 设计图材料
+3. 业务逻辑
+4. 分工合作
+5. 提交， 不断完善，修复bug
+</code></pre>
+<h3>二．遇到的问题及解决办法</h3>
+<h4>html部分:</h4>
+<pre><code>1. html5新标签，新属性应用（input的placeholder属性，type=”date”）；
+2. 命名规则
+</code></pre>
+<h4>css部分：</h4>
+<pre><code>1. 设计图各部分尺寸比例，ps测量；
+2. 移动端适配，meta标签使用，视口等理解；
+3. 移动端对flex box布局方式的支持，考虑用浮动布局；
+4. 图片大小压缩问题，宽度设置，高度自适应;
+5. 苹果手机自动缩放屏幕问题，禁止用户缩放;
+</code></pre>
+<h4>js部分：</h4>
+<pre><code>1. 用闭包解决js无块级作用域的影响；
+2. 自定义特性不会自动添加到dom对象属性；
+3. 自定义dom对象属性也不会添加到特性；
+4. 与后台数据对接，封装函数，做好接口；
+</code></pre>
+<h3>三．思考改进</h3>
+<pre><code>1. 命名规范
+2. W3C标准
+3. 使用框架开发，bootstrap或者jquery mobile
+4. 简化逻辑，性能优化
+5. 代码可维护性
+6. 开发效率
+</code></pre>
+<h3>补充：</h3>
+<pre><code>1. 图片和其他非代码文件放在单独的文件夹
+2. 变量声明和函数声明写在最前面，以增加代码的可维护性
+3. 使用动态改变元素的class来改变元素的样式
+4. 将雪碧图放到一个数组里，循环适用于多个元素
+5. html5在DOM上的扩展，自定义特性可以通过元素的dataset属性来访问自定义特性对于于DOM对象中的属性</code></pre>
+
+    </div>
+  </div>
+
+       
+        <div id="footer">
+            主题提供: <a href="https://github.com/laoqiren/yohe">Yohe</a>
+            Powered By <a href="https://github.com/laoqiren/yohe">Yohe</a>
+            图片存储: <a href="http://www.qiniu.com/">qiniu</a>
+        </div>
+    </div>
+
+    
+    <script>hljs.initHighlightingOnLoad();</script>

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="/yohe_site/assets/css/layout.css">
+    
+  <link rel="stylesheet"
+  href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/railscasts.min.css">
+  <link rel="stylesheet" href="/yohe_site/assets/css/post.css"/>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+
+    <title>
+    My Blog
+</title>
+</head>
+<body>
+
+    <div id="container">
+        <div id="nav">
+            <div class="site-header-info">
+                <a href="/yohe_site/">
+                    <img src="https://avatars2.githubusercontent.com/u/16136702?v=4&s=120" width="100" height="100"/>
+                </a>
+                <h1 class="site-title">My Blog</h1>
+                <h2 class="site-description">爱技术，爱生活</h2>
+            </div>
+
+            
+  <div class="post-info">
+    <div class="site-published-separator"></div>
+    <h2 class="site-published">Published</h2>
+    <h2 class="site-publish-date">2016-04-26</h2>
+  </div>
+ 
+        </div>
+
+        
+  <div class="post-content">
+    <div class="post-header">
+      <h2 class="post-cate">in 前端工程</h2>
+      <h1>gulp前端自动化</h1>
+    </div>
+    <div class="post-content">
+        <h4>序言</h4>
+<p>在项目开发过程中，我们会遇到许多重复枯燥的操作，比如当代码修改时，刷新浏览器，代码压缩，编译文件等等，这会降低我们的开发效率，而gulp就是一款前端自动化开发工具，采用pipe流机制，能够对指定文件进行处理，并且能够实时监控文件变化而自动执行相应的任务。这篇文章记录一下gulp的配置使用，这段序言也是后来加上的。</p>
+<!--more-->
+<h4>gulp是前端开发过程中对代码进行构建的工具，是自动化项目的构建利器；她不仅能对网站资源进行优化，而且在开发过程中很多重复的任务能够使用正确的工具自动完成；使用她，我们不仅可以很愉快的编写代码，而且大大提高我们的工作效率。</h4>
+<p>分享我在使用过程中的心得</p>
+<p>使用gulp：</p>
+<ol>
+<li>初始化项目，package.json可以帮助我们管理依赖，一个node package有两种依赖，一种是dependencies一种是devDependencies，其中前者依赖的项该是正常运行该包时所需要的依赖项，而后者则是开发的时候需要的依赖项，像一些进行单元测试之类的包。</li>
+</ol>
+<pre class=><code>$ npm init
+</code></pre>
+<ol start="2">
+<li>全局安装gulp：</li>
+</ol>
+<pre class=><code>$ npm install -g gulp
+</code></pre>
+<ol start="3">
+<li>
+<p>局部安装gulp:</p>
+<pre><code> $ npm install --save-dev gulp
+</code></pre>
+</li>
+<li>
+<p>安装依赖插件:</p>
+<pre><code> $ npm install --save-dev gulp-ruby-sass
+</code></pre>
+</li>
+<li>
+<p>我的配置:</p>
+</li>
+</ol>
+<pre class=js><code><span class="hljs-meta">'use strict'</span>;
+
+<span class="hljs-comment">//引入依赖模块</span>
+<span class="hljs-keyword">var</span> gulp = <span class="hljs-built_in">require</span>(<span class="hljs-string">'gulp'</span>),
+   uglify = <span class="hljs-built_in">require</span>(<span class="hljs-string">'gulp-uglify'</span>),
+   babel = <span class="hljs-built_in">require</span>(<span class="hljs-string">'gulp-babel'</span>),
+   watch = <span class="hljs-built_in">require</span>(<span class="hljs-string">'gulp-watch'</span>),
+   sass = <span class="hljs-built_in">require</span>(<span class="hljs-string">'gulp-ruby-sass'</span>),
+   autoprefix = <span class="hljs-built_in">require</span>(<span class="hljs-string">'gulp-autoprefixer'</span>),
+   rename = <span class="hljs-built_in">require</span>(<span class="hljs-string">'gulp-rename'</span>),
+   concat = <span class="hljs-built_in">require</span>(<span class="hljs-string">'gulp-concat'</span>),
+   browserSync = <span class="hljs-built_in">require</span>(<span class="hljs-string">'browser-sync'</span>);
+
+<span class="hljs-comment">//编译sass到css</span>
+gulp.task(<span class="hljs-string">'sass'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
+  <span class="hljs-keyword">return</span> sass(<span class="hljs-string">'app/sass/*.scss'</span>)
+    .on(<span class="hljs-string">'error'</span>, sass.logError)
+    .pipe(gulp.dest(<span class="hljs-string">'build/css/'</span>));
+});
+
+<span class="hljs-comment">//合并多个js文件,压缩，并重命名</span>
+gulp.task(<span class="hljs-string">'concat'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
+    gulp.src(<span class="hljs-string">'build/js/*.js'</span>)
+        .pipe(concat(<span class="hljs-string">'all.js'</span>))
+        .pipe(uglify())
+        .pipe(rename(<span class="hljs-string">'all.min.js'</span>))
+        .pipe(gulp.dest(<span class="hljs-string">'dist/js'</span>));
+});
+
+<span class="hljs-comment">// 自动补全css3浏览器兼容前缀</span>
+gulp.task(<span class="hljs-string">'styles'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>) </span>{
+  gulp.src([<span class="hljs-string">'./build/css/test.css'</span>])
+    .pipe(autoprefix(<span class="hljs-string">'last 2 versions'</span>))
+    .pipe(gulp.dest(<span class="hljs-string">'./dist/css'</span>));
+});
+
+<span class="hljs-comment">//babel转换es2015到es5</span>
+gulp.task(<span class="hljs-string">'babel'</span>,<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>)</span>{
+   <span class="hljs-keyword">return</span> gulp.src(<span class="hljs-string">"app/js/*.js"</span>)<span class="hljs-comment">// ES6 源码存放的路径</span>
+    .pipe(babel({<span class="hljs-attr">presets</span>: [<span class="hljs-string">'es2015'</span>]}))
+    .pipe(gulp.dest(<span class="hljs-string">"build/js"</span>)); <span class="hljs-comment">//转换成 ES5 存放的路径</span>
+   });
+
+<span class="hljs-comment">//监控es2015文件，sass文件，自动编译为es5文件，css文件</span>
+gulp.task(<span class="hljs-string">'watch'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
+   gulp.watch([<span class="hljs-string">'app/js/es2015.js'</span>,<span class="hljs-string">'app/sass/*.scss'</span>], [<span class="hljs-string">'babel'</span>,<span class="hljs-string">'sass'</span>]);
+});
+
+<span class="hljs-comment">//浏览器实时自动更新状态，不用手动刷新</span>
+gulp.task(<span class="hljs-string">'browser-sync'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
+   <span class="hljs-keyword">var</span> files = [
+      <span class="hljs-string">'app/**/*'</span>
+   ];
+   browserSync.init(files, {
+      <span class="hljs-attr">server</span>: {
+         <span class="hljs-attr">baseDir</span>: [<span class="hljs-string">'./app/html'</span>,<span class="hljs-string">'./app/'</span>]
+      }
+   });
+});
+</code></pre>
+
+    </div>
+  </div>
+
+       
+        <div id="footer">
+            主题提供: <a href="https://github.com/laoqiren/yohe">Yohe</a>
+            Powered By <a href="https://github.com/laoqiren/yohe">Yohe</a>
+            图片存储: <a href="http://www.qiniu.com/">qiniu</a>
+        </div>
+    </div>
+
+    
+    <script>hljs.initHighlightingOnLoad();</script>

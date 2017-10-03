@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="/yohe_site/assets/css/layout.css">
+    
+  <link rel="stylesheet"
+  href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/railscasts.min.css">
+  <link rel="stylesheet" href="/yohe_site/assets/css/post.css"/>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+
+    <title>
+    My Blog
+</title>
+</head>
+<body>
+
+    <div id="container">
+        <div id="nav">
+            <div class="site-header-info">
+                <a href="/yohe_site/">
+                    <img src="https://avatars2.githubusercontent.com/u/16136702?v=4&s=120" width="100" height="100"/>
+                </a>
+                <h1 class="site-title">My Blog</h1>
+                <h2 class="site-description">爱技术，爱生活</h2>
+            </div>
+
+            
+  <div class="post-info">
+    <div class="site-published-separator"></div>
+    <h2 class="site-published">Published</h2>
+    <h2 class="site-publish-date">2016-09-01</h2>
+  </div>
+ 
+        </div>
+
+        
+  <div class="post-content">
+    <div class="post-header">
+      <h2 class="post-cate">in Vue</h2>
+      <h1>以一个WebApp开始探寻Vue的思想</h1>
+    </div>
+    <div class="post-content">
+        <p><strong>感想</strong></p>
+<p>我在茫茫的海洋里探寻着前进的方向，那是支撑我走下去的动力。当面对复杂的业务逻辑时，当想要干件大事却力不从心时，多少迷茫，多少灰心丧气。</p>
+<p>人类的欲望促使着大脑不断思考，改进技术，进而提高生产力。人类的懒惰，促使着我们去寻找更加方便的工具解放我们的双手。</p>
+<p>各种生产活动亦如此，应用开发亦是如此。为了提高生产力，我们要自动化； 为了方便复用，我们要组件化... ...</p>
+<p><strong>文章</strong>
+见识过React后再来看看Vue,发现它如此轻盈易于上手，但又不失优雅。奉上一个应用实例，初步感受一下思想的美。</p>
+<p>应用UI比较简单，主要是一些数据的逻辑。先上一幅效果图：</p>
+<p><img src="http://7xsi10.com1.z0.glb.clouddn.com/showMemo.png" alt="showMemo"></p>
+<!--more-->
+<p>Vuejs作为一款MVVM框架，既有像Angular那样的丰富指令集，数据双向绑定，又与React一样强调组件化开发。更重要的，作者是中国人啊！作者是中国人的一个好处那就是，文档支持非常好，学习起来是非常容易的。。。</p>
+<p>细节不多讲，因为文档已经够好，我这里来个实践，就感受下写起来爽不爽。</p>
+<h3>分析整个应用结构</h3>
+<p>拿到一个需求最先开始的是什么，当然得先分析分析，我们看看我们最终要的结果：</p>
+<p><img src="http://7xsi10.com1.z0.glb.clouddn.com/createMemo.png" alt="create">
+<img src="http://7xsi10.com1.z0.glb.clouddn.com/Mainpage.png" alt="home"></p>
+<p>可以看到，整个应用分为三个功能，首页，查看备忘录，创建备忘录。它们虽然处于不同的页面，但是它们有一个共同点，那就是它们要共享一个数据，那便是备忘录数据。</p>
+<p>这份数据应该怎么管理呢？是每个页面都自己做自己的？NO,那样的话你会发现，数据是不好维护的。</p>
+<p>我们的做法是: 一个公共组件用于管理数据，三个功能分别是一个子组件，通过父子组件的通信来完成数据的通信。本文的例子比较简单，所以这种方式绰绰有余，对于更复杂的应用，Vue提供了类似React的flux实现:Vuex用于管理大型应用的状态。</p>
+<p>而父子组件的关系建立，我们可以用到Vue-router，它的设计本身就是为开发单页面应用(SPA)设计的，平时我们分页怎么做？要么全写出来，然后设置显示隐藏，要么发起异步请求，获取不同页面，我们现在怎么做？整个应用的内容动态渲染，通过路由设置不同url下的组件，这样应用非常流畅。</p>
+<p>单页应用虽好，但也有一些问题，需要不断去寻求解决办法，如首屏加载优化，SEO问题等等。</p>
+<h3>我们的技术栈</h3>
+<p>分析需求了，现在该干什么？当然是技术栈的选型了。</p>
+<p><strong>UI框架</strong>：就用bootstrap吧；
+<strong>开发工具</strong>:Webpack
+<strong>代码</strong>: Vue,ES2015
+<strong>服务器</strong>: express
+<strong>数据库</strong>: 为了方便，我就用本地数据库吧</p>
+<h3>搭建开发环境</h3>
+<p>Vue开源了自己的一款脚手架工具：Vue-cli,用于快速搭建开发环境，并提供了好几种模板，我选用的是Webpack模板，因为平时Webpack用得比较多。</p>
+<p><strong>初始化项目</strong></p>
+<pre class=><code>vue init webpack testApp
+</code></pre>
+<p><strong>进入testApp安装依赖</strong></p>
+<pre class=><code>npm install
+</code></pre>
+<p><strong>运行</strong></p>
+<pre class=><code>npm run dev
+</code></pre>
+<p>我是将所有生产的文件都放在dist目录的，包括index.html，只需要修改webpack-html-plugin的配置就好了。</p>
+<p>现在已经处于开发环境了，访问localhost:8080/dist/index.html就开始开发了。</p>
+<p>Webpack使用就不用说了吧，前面文章我也写过。</p>
+<h3>Let's GO</h3>
+<h4>入口文件:main.js</h4>
+<pre class=js><code><span class="hljs-keyword">import</span> Vue <span class="hljs-keyword">from</span> <span class="hljs-string">'vue'</span>;
+<span class="hljs-keyword">import</span> App <span class="hljs-keyword">from</span> <span class="hljs-string">'./components/App.vue'</span>;
+<span class="hljs-keyword">import</span> Home <span class="hljs-keyword">from</span> <span class="hljs-string">'./components/Home.vue'</span>;
+<span class="hljs-keyword">import</span> Show <span class="hljs-keyword">from</span> <span class="hljs-string">'./components/Show.vue'</span>;
+<span class="hljs-keyword">import</span> Create <span class="hljs-keyword">from</span> <span class="hljs-string">'./components/Create.vue'</span>;
+<span class="hljs-keyword">import</span> Stylesheet <span class="hljs-keyword">from</span> <span class="hljs-string">'./assets/style/main.css'</span>;
+<span class="hljs-keyword">var</span> VueRouter = <span class="hljs-built_in">require</span>(<span class="hljs-string">'vue-router'</span>);
+
+Vue.use(VueRouter);
+<span class="hljs-keyword">var</span> router = <span class="hljs-keyword">new</span> VueRouter();
+
+router.map({
+    <span class="hljs-string">'/Home'</span>:{
+        <span class="hljs-attr">component</span>: Home
+    },
+    <span class="hljs-string">'/Show'</span>:{
+        <span class="hljs-attr">component</span>: Show
+    },
+    <span class="hljs-string">'/Create'</span>:{
+        <span class="hljs-attr">component</span>: Create
+    }
+});
+router.redirect({
+  <span class="hljs-string">'*'</span>:<span class="hljs-string">'/Show'</span>
+});
+
+router.start(App,<span class="hljs-string">'#app'</span>);
+</code></pre>
+<p>看到了什么，我们定义一个路由器，管理三个路径，对应三个功能，App作为公告的组件</p>
+<h4>编写公共组件，用于全局管理数据,模板和样式我就省略了吧，完整版我的<a href="https://github.com/laoqiren">github</a>上有呢。</h4>
+<p>本文的例子比较简单，所以这种方式绰绰有余，Vue提供了类似React的flux实现:Vuex用于管理大型应用的状态。</p>
+<p>App.vue</p>
+<pre class=js><code>    <span class="hljs-keyword">import</span> DataBase <span class="hljs-keyword">from</span> <span class="hljs-string">'./storage.js'</span>;
+    <span class="hljs-keyword">export</span> <span class="hljs-keyword">default</span>{
+        created(){
+            <span class="hljs-keyword">var</span> memos = DataBase.query();
+            <span class="hljs-comment">//console.log(memos)</span>
+            <span class="hljs-keyword">this</span>.memos = memos;
+            <span class="hljs-built_in">console</span>.log(<span class="hljs-keyword">this</span>.memos);
+        },
+        data(){
+            <span class="hljs-keyword">return</span> {
+                <span class="hljs-attr">memos</span>:[],
+                <span class="hljs-attr">hasNew</span>: <span class="hljs-literal">false</span>
+            }
+        },
+        <span class="hljs-attr">events</span>: {
+            memoUpdate(memo){
+                <span class="hljs-keyword">this</span>.hasNew = <span class="hljs-literal">true</span>;
+                <span class="hljs-keyword">this</span>.memos.push(memo);
+                <span class="hljs-built_in">console</span>.log(memo.memo)
+                DataBase.add(memo.date,memo.time,memo.place,memo.memo);
+            },
+            memoDelete(index){
+                <span class="hljs-comment">//console.log(index);</span>
+                <span class="hljs-keyword">this</span>.memos.splice(index,<span class="hljs-number">1</span>);
+                DataBase.deleteM(index);
+            }
+        },
+        <span class="hljs-attr">methods</span>: {
+            clearNew(){
+                <span class="hljs-keyword">this</span>.hasNew = <span class="hljs-literal">false</span>;
+            }
+        }
+    }
+</code></pre>
+<p>可以看到，它是怎么管理数据的呢?</p>
+<p><strong>初始化数据</strong>:从数据库访问到数据
+<strong>分发数据</strong>:通过props向各个子组件传递数据
+<strong>响应修改</strong>这个通过事件来完成响应，包括删除，增加，而它们分别是在子组件触发的，然后一路冒泡通知给App组件，这样，子组件的行动尽在掌握之中，操作数据库的行为只交给公共组件。这样是不是感觉整个应用是如此的清晰？</p>
+<h4>编写数据库</h4>
+<p>采用本地SQLite数据库，storage.js暴露一个对象，拥有各个操作数据库的方法，然后让App.vue导入</p>
+<p>代码省略，详情看<a href="https://github.com/laoqiren">我的github</a></p>
+<h4>编写首页Home.vue</h4>
+<p>首页的组件要获取数据，计算出备忘录总数，比较简单:</p>
+<pre class=js><code><span class="hljs-keyword">export</span> <span class="hljs-keyword">default</span>{
+    <span class="hljs-attr">props</span>:[<span class="hljs-string">'memos'</span>],
+    <span class="hljs-attr">computed</span>: {
+        total(){
+            <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.memos.length;
+        }
+    }
+}
+</code></pre>
+<h4>编写显示目录Show.vue</h4>
+<p>获取数据，然后v-for列表渲染，这里有一个删除的戏码，在显示的时候，每条可以选择性地删除啊。所以就要监听删除的事件，并派发给父组件。</p>
+<pre class=js><code><span class="hljs-keyword">export</span> <span class="hljs-keyword">default</span> {
+    <span class="hljs-attr">props</span>: [<span class="hljs-string">'memos'</span>],
+    <span class="hljs-attr">methods</span>: {
+        deleteM(memo){
+            <span class="hljs-keyword">let</span> index = <span class="hljs-keyword">this</span>.memos.indexOf(memo);
+            <span class="hljs-keyword">this</span>.$dispatch(<span class="hljs-string">'memoDelete'</span>,index);
+        }
+    }
+}
+</code></pre>
+<h4>剩下的创建目录Create.vue</h4>
+<p>这里有一个增加数据的戏码。要监听增加数据的事件，然后还要派发上去，还得将增加的数据以对象的形式传参，这个数据对象是要通过双向数据绑定来不断地随表单输入而获取最新版本的</p>
+<pre class=js><code><span class="hljs-keyword">export</span> <span class="hljs-keyword">default</span> {
+    data(){
+        <span class="hljs-keyword">return</span> {
+            <span class="hljs-attr">memo</span>:{
+            }
+        }
+    },
+    <span class="hljs-attr">methods</span>: {
+        save(){
+            <span class="hljs-keyword">var</span> memo = <span class="hljs-keyword">this</span>.memo;
+            <span class="hljs-keyword">this</span>.$dispatch(<span class="hljs-string">'memoUpdate'</span>, memo);
+        }
+    }
+}
+</code></pre>
+<h3>结语</h3>
+<p>有没有感觉很爽？反正我是这么觉得的。这个例子比较简单，但是从这一个简单的例子中我们可以看到用Vue开发大型应用的潜力，而且能够我们以享受。</p>
+<p>写代码要写得舒心，就好比我要选择一款自己喜欢的编辑器背景一样，我想让我的开发过程乐趣无穷，而编码的过程，要想转枯燥的工作为享受是要做多方面努力的，你得有工具来代替你做复杂重复的工作，你得有好多应用结构，让自己写得那么随心所欲，尽在掌握，你得。。。。。。</p>
+<p><strong>总之，我们追寻的不是一款最好最牛逼的框架，而是一种思想的美丽，有了思想才会进步。</strong></p>
+<p>以一篇实例文章开始，揭开一探究竟的序幕。</p>
+<p>这或许是开学前的最后一篇文章了，大二了，我有许多要学习的，也有许多自己要去改进的，还有美丽的大学生活。加油。</p>
+
+    </div>
+  </div>
+
+       
+        <div id="footer">
+            主题提供: <a href="https://github.com/laoqiren/yohe">Yohe</a>
+            Powered By <a href="https://github.com/laoqiren/yohe">Yohe</a>
+            图片存储: <a href="http://www.qiniu.com/">qiniu</a>
+        </div>
+    </div>
+
+    
+    <script>hljs.initHighlightingOnLoad();</script>

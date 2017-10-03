@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="/yohe_site/assets/css/layout.css">
+    
+  <link rel="stylesheet"
+  href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/railscasts.min.css">
+  <link rel="stylesheet" href="/yohe_site/assets/css/post.css"/>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+
+    <title>
+    My Blog
+</title>
+</head>
+<body>
+
+    <div id="container">
+        <div id="nav">
+            <div class="site-header-info">
+                <a href="/yohe_site/">
+                    <img src="https://avatars2.githubusercontent.com/u/16136702?v=4&s=120" width="100" height="100"/>
+                </a>
+                <h1 class="site-title">My Blog</h1>
+                <h2 class="site-description">爱技术，爱生活</h2>
+            </div>
+
+            
+  <div class="post-info">
+    <div class="site-published-separator"></div>
+    <h2 class="site-published">Published</h2>
+    <h2 class="site-publish-date">2016-11-14</h2>
+  </div>
+ 
+        </div>
+
+        
+  <div class="post-content">
+    <div class="post-header">
+      <h2 class="post-cate">in Linux</h2>
+      <h1>记录Linux遇到的一些坑</h1>
+    </div>
+    <div class="post-content">
+        <p>来一篇文章，对之前，最近，乃至后面的Linux折腾中遇到的一些坑进行汇总，一方面是个总结，一方面希望能够给遇到同样问题的小伙伴儿有一点点儿帮助。</p>
+<p>这也是我第一篇关于Linux的文章。文章主要汇总一些小问题，有必要会对一些问题开单独文章详细总结。</p>
+<p><strong>新手上路，踩着坑，一步步前行。</strong></p>
+<!--more-->
+<p><strong>环境</strong></p>
+<p>CentOS 7.0</p>
+<h3>VM使用NAT模式联网问题</h3>
+<h4>问题描述:</h4>
+<p>查看启用的网卡发现只有lo,virbr0,并没有发现正常情况下的eth0(或者用于访问网络的网卡),/etc/sysconfig/network-scripts下没有ifcfg-eth0配置文件</p>
+<h4>解决过程:</h4>
+<p>起初尝试过收到创建ifcfg-eth0文件，进行相关配置，再</p>
+<pre class=><code>service network restart
+</code></pre>
+<p>failed,查看报错详情:
+<img src="http://7xsi10.com1.z0.glb.clouddn.com/ifcfgLBS.png" alt="ifcfgerror"></p>
+<p>查询资料说是mac地址问题，可我已经配置好mac地址。</p>
+<h4>解决办法:</h4>
+<p>由于VM虚拟网卡和Linux兼容问题导致。其默认使用的AMD网卡，而我的真机为Intel的网卡，需要手动修改配置，更改网卡类型。</p>
+<p>找到CentOS.vmx配置文件，新增如下一条:</p>
+<pre class=><code>ethernet0.virtualDev = &quot;e1000&quot;
+</code></pre>
+<p>这样，就有用于访问网络的网卡了。并不一定是eth0。</p>
+<h3>libXss.so.1问题</h3>
+<h4>问题描述</h4>
+<p>配置VSCode遇到的问题，正常安装，无法正常启动，报如下错误:</p>
+<p><img src="http://7xsi10.com1.z0.glb.clouddn.com/libXS.png" alt="libXerror">
+缺失libXss.so.1</p>
+<h4>解决方法:</h4>
+<p>从CentOS官网下载libSScrnSaver rpm文件，然后进行安装</p>
+<p><img src="http://7xsi10.com1.z0.glb.clouddn.com/libXS1.png" alt="solvelibX"></p>
+<h3>双系统为ubuntu扩充硬盘问题</h3>
+<p>从windows将某磁盘压缩，新建空闲分区后，进入ubuntu时，提示</p>
+<pre class=><code>unknown fileSystem
+</code></pre>
+<p>由于分区情况发生变化，导致grub找不到</p>
+<h4>解决方法:</h4>
+<p>列出所有磁盘:</p>
+<pre class=><code>ls
+</code></pre>
+<p>一个一个尝试如:</p>
+<pre class=><code>ls (hd0,10)
+</code></pre>
+<p>找到ubuntu启动盘，我启动盘是单独的boot分区，在(hd0,10)下
+此时</p>
+<pre class=><code> set root=hd0,msdos10
+ set prefix=(hd0,msdos10)/grub
+</code></pre>
+<p>接着</p>
+<pre class=><code>insmod normal
+normal
+</code></pre>
+<p>最后进入系统修复grub</p>
+<pre class=><code>sudo update-grub
+sudo grub-install /dev/sda
+</code></pre>
+<p>注意这里sda后不要加盘号</p>
+<p><strong>未完待续</strong></p>
+
+    </div>
+  </div>
+
+       
+        <div id="footer">
+            主题提供: <a href="https://github.com/laoqiren/yohe">Yohe</a>
+            Powered By <a href="https://github.com/laoqiren/yohe">Yohe</a>
+            图片存储: <a href="http://www.qiniu.com/">qiniu</a>
+        </div>
+    </div>
+
+    
+    <script>hljs.initHighlightingOnLoad();</script>
