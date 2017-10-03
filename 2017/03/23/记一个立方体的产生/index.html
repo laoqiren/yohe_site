@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="/yohe_site/assets/css/layout.css">
+    
+  <link rel="stylesheet"
+  href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/railscasts.min.css">
+  <link rel="stylesheet" href="/yohe_site/assets/css/post.css"/>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+
+    <title>
+    My Blog
+</title>
+</head>
+<body>
+
+    <div id="container">
+        <div id="nav">
+            <div class="site-header-info">
+                <a href="/yohe_site/">
+                    <img src="https://avatars2.githubusercontent.com/u/16136702?v=4&s=120" width="100" height="100"/>
+                </a>
+                <h1 class="site-title">My Blog</h1>
+                <h2 class="site-description">爱技术，爱生活</h2>
+            </div>
+
+            
+  <div class="post-info">
+    <div class="site-published-separator"></div>
+    <h2 class="site-published">Published</h2>
+    <h2 class="site-publish-date">2017-03-23</h2>
+  </div>
+ 
+        </div>
+
+        
+  <div class="post-content">
+    <div class="post-header">
+      <h2 class="post-cate">in WebGL</h2>
+      <h1>记一个立方体的产生</h1>
+    </div>
+    <div class="post-content">
+        <p>从原生WebGL的角度分析一个立方体的产生。例子虽简单，但包含了好多基础概念哈哈，算是入门阶段的小小总结吧。</p>
+<p>首先来看看最终的效果 (♥◠‿◠)ﾉ：</p>
+<p><img src="http://7xsi10.com1.z0.glb.clouddn.com/test.gif" alt=""></p>
+<!--more-->
+<h2>WebGL坐标系统</h2>
+<p>与Canvas画布的坐标系不同，WebGL默认采用右手坐标系：
+<img src="http://7xsi10.com1.z0.glb.clouddn.com/locate.png" alt=""></p>
+<p>WebGL坐标原点在画布中点。</p>
+<p>以将屏幕上某点的px坐标转换到WebGL坐标为例：</p>
+<pre class=js><code>
+<span class="hljs-keyword">let</span> x = e.clientX,
+    y = e.clientY;
+<span class="hljs-keyword">let</span> rect = e.target.getBoundingClientRect();
+
+x = ((x - rect.left) - canvas.width/<span class="hljs-number">2</span>)/(canvas.width/<span class="hljs-number">2</span>);
+y = ((y - rect.height) - canvas.height/<span class="hljs-number">2</span>)/(canvas.height/<span class="hljs-number">2</span>);
+
+</code></pre>
+<p>先是将px坐标转换为canvas画布坐标（即减去画布与屏幕左和上的距离），再转换成WebGL坐标（由于坐标值为0.0-1.0的值，所以要进行比值操作）</p>
+<h2>缓冲区对象</h2>
+<p>用于临时保存多个顶点信息，一次性绘制多个顶点。</p>
+<p>创建缓冲区对象 -&gt; 绑定缓冲区对象 -&gt; 写入数据到缓冲区对象 -&gt; 分配缓冲区对象给attribute变量 -&gt; 开启attribute变量</p>
+<p>如将正方体的每个顶点坐标，颜色值，法向量坐标输送到顶点着色器变量里:</p>
+<pre class=js><code><span class="hljs-keyword">const</span> vertices = <span class="hljs-keyword">new</span> <span class="hljs-built_in">Float32Array</span>([
+        <span class="hljs-number">1.0</span>, <span class="hljs-number">1.0</span>, <span class="hljs-number">1.0</span>,  <span class="hljs-number">-1.0</span>, <span class="hljs-number">1.0</span>, <span class="hljs-number">1.0</span>,  <span class="hljs-number">-1.0</span>,<span class="hljs-number">-1.0</span>, <span class="hljs-number">1.0</span>,   <span class="hljs-number">1.0</span>,<span class="hljs-number">-1.0</span>, <span class="hljs-number">1.0</span>,  <span class="hljs-comment">// v0-v1-v2-v3 front</span>
+     <span class="hljs-number">1.0</span>, <span class="hljs-number">1.0</span>, <span class="hljs-number">1.0</span>,   <span class="hljs-number">1.0</span>,<span class="hljs-number">-1.0</span>, <span class="hljs-number">1.0</span>,   <span class="hljs-number">1.0</span>,<span class="hljs-number">-1.0</span>,<span class="hljs-number">-1.0</span>,   <span class="hljs-number">1.0</span>, <span class="hljs-number">1.0</span>,<span class="hljs-number">-1.0</span>,  <span class="hljs-comment">// v0-v3-v4-v5 right</span>
+     <span class="hljs-number">1.0</span>, <span class="hljs-number">1.0</span>, <span class="hljs-number">1.0</span>,   <span class="hljs-number">1.0</span>, <span class="hljs-number">1.0</span>,<span class="hljs-number">-1.0</span>,  <span class="hljs-number">-1.0</span>, <span class="hljs-number">1.0</span>,<span class="hljs-number">-1.0</span>,  <span class="hljs-number">-1.0</span>, <span class="hljs-number">1.0</span>, <span class="hljs-number">1.0</span>,  <span class="hljs-comment">// v0-v5-v6-v1 up</span>
+    <span class="hljs-number">-1.0</span>, <span class="hljs-number">1.0</span>, <span class="hljs-number">1.0</span>,  <span class="hljs-number">-1.0</span>, <span class="hljs-number">1.0</span>,<span class="hljs-number">-1.0</span>,  <span class="hljs-number">-1.0</span>,<span class="hljs-number">-1.0</span>,<span class="hljs-number">-1.0</span>,  <span class="hljs-number">-1.0</span>,<span class="hljs-number">-1.0</span>, <span class="hljs-number">1.0</span>,  <span class="hljs-comment">// v1-v6-v7-v2 left</span>
+    <span class="hljs-number">-1.0</span>,<span class="hljs-number">-1.0</span>,<span class="hljs-number">-1.0</span>,   <span class="hljs-number">1.0</span>,<span class="hljs-number">-1.0</span>,<span class="hljs-number">-1.0</span>,   <span class="hljs-number">1.0</span>,<span class="hljs-number">-1.0</span>, <span class="hljs-number">1.0</span>,  <span class="hljs-number">-1.0</span>,<span class="hljs-number">-1.0</span>, <span class="hljs-number">1.0</span>,  <span class="hljs-comment">// v7-v4-v3-v2 down</span>
+     <span class="hljs-number">1.0</span>,<span class="hljs-number">-1.0</span>,<span class="hljs-number">-1.0</span>,  <span class="hljs-number">-1.0</span>,<span class="hljs-number">-1.0</span>,<span class="hljs-number">-1.0</span>,  <span class="hljs-number">-1.0</span>, <span class="hljs-number">1.0</span>,<span class="hljs-number">-1.0</span>,   <span class="hljs-number">1.0</span>, <span class="hljs-number">1.0</span>,<span class="hljs-number">-1.0</span>   <span class="hljs-comment">// v4-v7-v6-v5 back</span>
+    ]);
+<span class="hljs-keyword">let</span> buffer = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER,buffer);
+gl.bufferData(gl.ARRAY_BUFFER,vertices,gl.STATIC_DRAW);
+<span class="hljs-keyword">let</span> a_Attribute = gl.getAttribLocation(gl.program,<span class="hljs-string">'a_Postion'</span>);
+gl.vertexAttribPointer(a_Attribute,num,type,<span class="hljs-literal">false</span>,<span class="hljs-number">0</span>,<span class="hljs-number">0</span>);
+gl.enableVertexAttribArray(a_Attribute);
+</code></pre>
+<h2>变换（模型矩阵）</h2>
+<p>将物体进行多种变换，实际是多种矩阵做乘法。这里用封装好的矩阵API来创建模型变换矩阵。</p>
+<p>正方体在不断的旋转:</p>
+<pre class=js><code><span class="hljs-keyword">let</span> modelMatrix = <span class="hljs-keyword">new</span> Matrix4();
+<span class="hljs-keyword">let</span> currentAngle = animate(currentAngle);
+modelMatrix.setRotate(currentAngle, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>, <span class="hljs-number">0</span>);
+gl.uniformMatrix4fv(u_ModelMatrix,<span class="hljs-literal">false</span>,modelMatrix.elements);
+</code></pre>
+<h2>观察者视点和视线</h2>
+<p>通过指定观察点位置，目标坐标，上方向，生成视图矩阵。</p>
+<p>如这里我们看正方体：</p>
+<pre class=js><code><span class="hljs-keyword">let</span> viewMatrix = <span class="hljs-keyword">new</span> Matrix4();
+viewMatrix.setLookAt(<span class="hljs-number">4</span>, <span class="hljs-number">3</span>, <span class="hljs-number">7</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>, <span class="hljs-number">0</span>);
+</code></pre>
+<h2>可视空间（投影矩阵）</h2>
+<p>和现实中的照相机一样，可视区间是有一定范围的，在范围之外的，可以不用渲染，来节约开销。</p>
+<p>两类可视空间：</p>
+<ol>
+<li>正射投影</li>
+<li>透视投影</li>
+</ol>
+<p>正射投影中，不管目标离视点多远，呈现的大小就是原本的大小，这适合打印等场景，要模拟显示场景，就需要深度感，即目标大小离视点越远，看起来应该越小。</p>
+<h3>创建透视投影矩阵</h3>
+<p>我们这里的正方体模拟显示场景，用透视投影，
+透视投影图示：
+<img src="http://7xsi10.com1.z0.glb.clouddn.com/proj.png" alt=""></p>
+<p>创建透视投影矩阵，需指定垂直视角（顶面与底面夹角，图中两条红色线夹角），近剪裁面宽高比，近剪裁面和远剪裁面的位置。为了防止正方体变形，将宽高比设为画布宽高比:</p>
+<pre class=js><code><span class="hljs-keyword">let</span> projMatrix = <span class="hljs-keyword">new</span> Matrix4();
+projMatrix.setPerspective(<span class="hljs-number">30</span>,canvas.width/canvas.height,<span class="hljs-number">1</span>,<span class="hljs-number">100</span>);
+</code></pre>
+<h2>得到最终位置</h2>
+<p>实际绘制在画布上的顶点位置，是经过原本坐标矩阵，模型矩阵，视图矩阵，投影矩阵运算而来的。</p>
+<p>即最终</p>
+<pre class=js><code>gl_Position = u_MvpMatrix * a_Position;
+</code></pre>
+<p>其中u_MvpMatrix表示模型视图投影综合矩阵。</p>
+<p>如这个正方体:</p>
+<pre class=js><code><span class="hljs-keyword">let</span> mvpMatrix = <span class="hljs-keyword">new</span> Matrix4();
+mvpMatrix.set(projMatrix).multiply(viewMatrix).multiply(modelMatrix);
+gl.uniformMatrix4fv(u_MvpMatrix,<span class="hljs-literal">false</span>,mvpMatrix.elements);
+</code></pre>
+<h2>光照</h2>
+<p>可以看到，这个正方体是模拟在光照环境下的，而且是点光源光。</p>
+<h3>漫反射光</h3>
+<p>对于平行光和点光源，漫反射形式的反射光颜色最终取决于入色光颜色，表面本身颜色，以及入射光与表面法线夹角决定。</p>
+<p>即：</p>
+<pre class=><code>&lt;漫反射光颜色&gt; = &lt;入射光颜色&gt; x &lt;表面基底色&gt; x cosa
+</code></pre>
+<p>根据数量积公式，得到</p>
+<pre class=><code>cosa = &lt;光线方向单位向量&gt;.&lt;法线方向单位向量&gt;
+</code></pre>
+<p>对于点光源，还需要通过点光源位置和目标点位置计算出光线方向</p>
+<pre class=c><code>vec3 normal = normalize(v_Normal);
+vec3 lightDirection = normalize(u_LightPosition - v_Position);
+<span class="hljs-keyword">float</span> nDotL = max(dot(lightDirection,normal),<span class="hljs-number">0.0</span>);
+vec3 diffuse = u_LightColor * vec3(v_Color) * nDotL; <span class="hljs-comment">//漫反射光颜色</span>
+</code></pre>
+<h3>加上环境光效果</h3>
+<p>最终的物体视觉颜色应该是:</p>
+<pre class=c><code>vec3 ambient = u_AmbientLight * v_Color.rgb;
+gl_FragColor = vec4(diffuse + ambient,v_Color.a);
+</code></pre>
+<h3>转动的正方体光照</h3>
+<p>目标在不断转动，会导致顶点位置在不断变化，使得光线方向在不断变化，而且转动会导致顶点的法向量发生变化。</p>
+<p>对于光线方向，在计算的时候，目标顶点坐标就应该是经过模型矩阵运算后的坐标（不包括视图，投影，因为光照考虑实际目标位置），即</p>
+<pre class=><code>v_Position = vec3(u_ModelMatrix * a_Position);
+</code></pre>
+<p>对于变化的法向量：</p>
+<pre class=><code>变化后的法向量 = 原来的法向量矩阵 x 模型矩阵的逆转置矩阵。
+</code></pre>
+<p>如这里的正方体:</p>
+<pre class=js><code><span class="hljs-keyword">let</span> normalMatrix  = <span class="hljs-keyword">new</span> Matrix4();
+normalMatrix.setInverseOf(modelMatrix);
+normalMatrix.transpose();
+gl.uniformMatrix4fv(u_NormalMatrix,<span class="hljs-literal">false</span>,normalMatrix.elements);
+</code></pre>
+<p>着色器：</p>
+<pre class=c><code>v_Normal = normalize(vec3(u_NormalMatrix * a_Normal));
+</code></pre>
+<h2>其他细节</h2>
+<h3>隐藏面消除</h3>
+<p>默认情况下，WebGL是以顶点在缓冲区的顺序进行绘制的，当我们绘制的各目标实际远近顺序和数据在缓冲区顺序不一致时，就会出现远处目标本来看不到的部分挡住了近处的目标现象。</p>
+<p>开启隐藏面消除功能:</p>
+<pre class=js><code>gl.enable(gl.DEPTH_TEST);
+</code></pre>
+<p>绘制之前，清除深度缓冲区:</p>
+<pre class=js><code>gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+</code></pre>
+<h3>顶点索引</h3>
+<p>你可能会问，上面的顶点坐标类型数组中，为什么有24个顶点数据呢？
+这是因为在正方体中，每个顶点可能处于不同面，不同面有不同法向量，webGL提供drawElements方法，通过索引方式绘制，这样做可以节省一些数据（不然需要6x6=36个顶点）</p>
+<pre class=js><code><span class="hljs-keyword">const</span> indices = <span class="hljs-keyword">new</span> <span class="hljs-built_in">Uint8Array</span>([
+    <span class="hljs-number">0</span>, <span class="hljs-number">1</span>, <span class="hljs-number">2</span>,   <span class="hljs-number">0</span>, <span class="hljs-number">2</span>, <span class="hljs-number">3</span>,    <span class="hljs-comment">// front</span>
+    <span class="hljs-number">4</span>, <span class="hljs-number">5</span>, <span class="hljs-number">6</span>,   <span class="hljs-number">4</span>, <span class="hljs-number">6</span>, <span class="hljs-number">7</span>,    <span class="hljs-comment">// right</span>
+    <span class="hljs-number">8</span>, <span class="hljs-number">9</span>,<span class="hljs-number">10</span>,   <span class="hljs-number">8</span>,<span class="hljs-number">10</span>,<span class="hljs-number">11</span>,    <span class="hljs-comment">// up</span>
+    <span class="hljs-number">12</span>,<span class="hljs-number">13</span>,<span class="hljs-number">14</span>,  <span class="hljs-number">12</span>,<span class="hljs-number">14</span>,<span class="hljs-number">15</span>,    <span class="hljs-comment">// left</span>
+    <span class="hljs-number">16</span>,<span class="hljs-number">17</span>,<span class="hljs-number">18</span>,  <span class="hljs-number">16</span>,<span class="hljs-number">18</span>,<span class="hljs-number">19</span>,    <span class="hljs-comment">// down</span>
+    <span class="hljs-number">20</span>,<span class="hljs-number">21</span>,<span class="hljs-number">22</span>,  <span class="hljs-number">20</span>,<span class="hljs-number">22</span>,<span class="hljs-number">23</span>      <span class="hljs-comment">// back</span>
+]);
+<span class="hljs-keyword">let</span> indexBuffer = gl.createBuffer();
+gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,indexBuffer);
+gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,indices,gl.STATIC_DRAW);
+...
+gl.drawElements(gl.TRIANGLES,<span class="hljs-number">24</span>,gl.UNSIGNED_BYTE,<span class="hljs-number">0</span>);
+</code></pre>
+<h3>逐顶点不自然现象</h3>
+<p>如果在顶点着色器中进行逐顶点的颜色计算，会发现最后立方体表面颜色渐变不够自然。这是因为靠几个顶点进行内插计算出来的效果和实际光照效果有一定差别，这就需要我们进行逐片元的颜色计算：</p>
+<pre class=js><code><span class="hljs-keyword">const</span> FSHADER_SOURCE = <span class="hljs-string">`
+    precision mediump float;
+    uniform vec3 u_LightColor;
+    uniform vec3 u_LightPosition;
+    uniform vec3 u_AmbientLight;
+    varying vec4 v_Color;
+    varying vec3 v_Normal;
+    varying vec3 v_Position;
+    void main(){
+        vec3 normal = normalize(v_Normal);
+        vec3 lightDirection = normalize(u_LightPosition - v_Position);
+        float nDotL = max(dot(lightDirection,normal),0.0);
+        vec3 diffuse = u_LightColor * vec3(v_Color) * nDotL;
+        vec3 ambient = u_AmbientLight * v_Color.rgb;
+        gl_FragColor = vec4(diffuse + ambient,v_Color.a);
+    }
+`</span>
+</code></pre>
+<h3>精度限定</h3>
+<p>着色器对片元着色器的float类型没有默认精度，需要手动添加（不然会报错）:</p>
+<pre class=c><code>precision mediump <span class="hljs-keyword">float</span>;<span class="hljs-comment">//中精度</span>
+precision highp <span class="hljs-keyword">float</span>; <span class="hljs-comment">//高精度</span>
+precision lowp <span class="hljs-keyword">float</span>; <span class="hljs-comment">//低精度</span>
+</code></pre>
+<h2>渲染过程</h2>
+<p><img src="http://7xsi10.com1.z0.glb.clouddn.com/processgraph.png" alt=""></p>
+<ol>
+<li>
+<p>对缓冲区对象的每个顶点，执行顶点着色器，将顶点坐标赋值给gl_Position后，顶点进入图形装配区域，暂存。</p>
+</li>
+<li>
+<p>所有点传入后，根据绘制API第一个参数决定如何装配图形，然后装配出图形。</p>
+</li>
+<li>
+<p>对装配出来的几何图形进行光栅化，对装配的几何图形用像素进行填充。</p>
+</li>
+<li>
+<p>对光栅化后的图形进行逐片元调用片元着色器，片元着色器会根据片元坐标计算每个片元的信息，比如颜色，纹理像素等并写入颜色缓冲区。如这里的正方体，我们就在片元着色器里计算像素颜色值（在光照影响下），如果同一个表面的四个顶点颜色不同，会发现有一个渐变效果，这便是片元着色器进行插值计算的结果。</p>
+</li>
+<li>
+<p>当所有片元的值计算完毕后，进行最终渲染。</p>
+</li>
+</ol>
+<h2>initShaders()</h2>
+<p>这里绘制正方体参照《WebGL编程指南》并用了代码示例中的一些库文件，包括这里的initShaders():</p>
+<ol>
+<li>创建着色器对象(gl.createShader());</li>
+<li>向着色器对象中填充着色器的源代码(gl.shaderSource());</li>
+<li>编译着色器(gl.compileProgram());</li>
+<li>创建程序对象（gl.createProgram());</li>
+<li>为程序对象分配着色器(gl.attachShader());</li>
+<li>连接程序对象(gl.linkProgram());</li>
+<li>使用程序对象(gl.useProgram());</li>
+</ol>
+<p>详细细节参考《WebGL编程指南》</p>
+<h2>结束语</h2>
+<p>可以看到，用原生WebGL API进行绘制是多么的麻烦，这里还引入了一些矩阵库，简化了矩阵转换细节。虽说麻烦，但是对于用来学习图形学基础知识还是不错的。</p>
+
+    </div>
+  </div>
+
+       
+        <div id="footer">
+            © 2017 <a href="#">laoqiren</a>
+            主题提供: <a href="https://github.com/laoqiren/yohe">Yohe</a>
+            Powered By <a href="https://github.com/laoqiren/yohe">Yohe</a>
+            图片存储: <a href="http://www.qiniu.com/">qiniu</a>
+        </div>
+    </div>
+
+    
+    <script>hljs.initHighlightingOnLoad();</script>

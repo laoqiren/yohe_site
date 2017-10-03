@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="/yohe_site/assets/css/layout.css">
+    
+  <link rel="stylesheet"
+  href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/railscasts.min.css">
+  <link rel="stylesheet" href="/yohe_site/assets/css/post.css"/>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+
+    <title>
+    My Blog
+</title>
+</head>
+<body>
+
+    <div id="container">
+        <div id="nav">
+            <div class="site-header-info">
+                <a href="/yohe_site/">
+                    <img src="https://avatars2.githubusercontent.com/u/16136702?v=4&s=120" width="100" height="100"/>
+                </a>
+                <h1 class="site-title">My Blog</h1>
+                <h2 class="site-description">爱技术，爱生活</h2>
+            </div>
+
+            
+  <div class="post-info">
+    <div class="site-published-separator"></div>
+    <h2 class="site-published">Published</h2>
+    <h2 class="site-publish-date">2017-08-17</h2>
+  </div>
+ 
+        </div>
+
+        
+  <div class="post-content">
+    <div class="post-header">
+      <h2 class="post-cate">in Haskell</h2>
+      <h1>从Functors到Monad</h1>
+    </div>
+    <div class="post-content">
+        <p>从Functors到Monad，理解Functor,Applicative,Monoids,Monad。文章理解或有偏差，仅作为自己总结用。</p>
+<!--more-->
+<p>文章参照《Learn you a Haskell》和《mostly　adequate　guide》</p>
+<h2>Functor typeclass</h2>
+<p>先来看看haskell中其type class定义:</p>
+<pre class=haskell><code><span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-type">Functor</span> (<span class="hljs-title">f</span> :: * -&gt; *) <span class="hljs-keyword">where</span></span>
+  fmap :: (a -&gt; b) -&gt; f a -&gt; f b
+  (&lt;$) :: a -&gt; f b -&gt; f a
+</code></pre>
+<p>从f的kind我们可以看到，其不是一个具体类型，而是一个接受具体类型来构造具体类型的类型构造子（参照我的另一篇文章&quot;Haskell类型系统&quot;）。</p>
+<p>在js中的实现：</p>
+<pre class=js><code><span class="hljs-keyword">let</span> Container = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">x</span>) </span>{
+  <span class="hljs-keyword">this</span>.__value = x;
+}
+
+Container.of = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">x</span>) </span>{ <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> Container(x); };
+
+Container.prototype.fmap = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">f</span>)</span>{
+  <span class="hljs-keyword">return</span> Container.of(f(<span class="hljs-keyword">this</span>.__value))
+}
+</code></pre>
+<p>这里暂时可以简单地把Functor理解为容器，将函数运用到容器内的值上面，再将处理结果用容器进行包装。</p>
+<h3>List Functor</h3>
+<p>以<code>[]</code>为例，看看<code>[]</code>的<code>Functor instance</code>实现:</p>
+<pre class=haskell><code><span class="hljs-class"><span class="hljs-keyword">instance</span> <span class="hljs-type">Functor</span> [] <span class="hljs-keyword">where</span></span>
+    <span class="hljs-meta">{-# INLINE fmap #-}</span>
+    fmap = map
+</code></pre>
+<p>可以看到<code>fmap</code>直接就是<code>map</code>，这个不难理解：<code>map :: (a -&gt; b) -&gt; [a] -&gt; [b]</code>。</p>
+<h3>Maybe Functor</h3>
+<pre class=haskell><code><span class="hljs-class"><span class="hljs-keyword">instance</span>  <span class="hljs-type">Functor</span> <span class="hljs-type">Maybe</span>  <span class="hljs-keyword">where</span></span>
+    fmap _ <span class="hljs-type">Nothing</span>       = <span class="hljs-type">Nothing</span>
+    fmap f (<span class="hljs-type">Just</span> a)      = <span class="hljs-type">Just</span> (f a)
+</code></pre>
+<p>总之接受一个通过类型构造子包装的具体类型数据，最终返回的也要是经过它封装的具体类型数据。</p>
+<p>js中实现:</p>
+<pre class=js><code><span class="hljs-keyword">let</span> Maybe = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">x</span>) </span>{
+  <span class="hljs-keyword">this</span>.__value = x;
+}
+
+Maybe.of = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">x</span>) </span>{
+  <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> Maybe(x);
+}
+
+Maybe.prototype.isNothing = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>) </span>{
+  <span class="hljs-keyword">return</span> (<span class="hljs-keyword">this</span>.__value === <span class="hljs-literal">null</span> || <span class="hljs-keyword">this</span>.__value === <span class="hljs-literal">undefined</span>);
+}
+
+Maybe.prototype.fmap = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">f</span>) </span>{
+  <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.isNothing() ? Maybe.of(<span class="hljs-literal">null</span>) : Maybe.of(f(<span class="hljs-keyword">this</span>.__value));
+}
+</code></pre>
+<p>一个例子:</p>
+<pre class=js><code><span class="hljs-keyword">let</span> showWelcome = _.compose(_.concat( <span class="hljs-string">"Welcome "</span>), _.prop(<span class="hljs-string">'name'</span>))
+
+<span class="hljs-keyword">let</span> checkActive = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">user</span>) </span>{
+ <span class="hljs-keyword">return</span> user.active ? Right.of(user) : Left.of(<span class="hljs-string">'Your account is not active'</span>)
+}
+
+<span class="hljs-keyword">let</span> ex6 = _.compose(fmap(showWelcome),checkActive)
+
+<span class="hljs-built_in">console</span>.log(ex6({<span class="hljs-attr">active</span>:<span class="hljs-literal">false</span>,<span class="hljs-attr">name</span>:<span class="hljs-string">"luoxia"</span>})) <span class="hljs-comment">// Left {__value: 'Your account is not active'}</span>
+</code></pre>
+<h3>Either Functor</h3>
+<p>Either可以用于纯的错误处理，这里的纯可以对比一般的<code>try/catch</code>。</p>
+<p>haskell中关于Either的Functor instance:</p>
+<pre class=haskell><code><span class="hljs-class"><span class="hljs-keyword">instance</span> <span class="hljs-type">Functor</span> (<span class="hljs-type">Either</span> <span class="hljs-title">a</span>) <span class="hljs-keyword">where</span></span>
+    fmap f (<span class="hljs-type">Right</span> x) = <span class="hljs-type">Right</span> (f x)
+    fmap f (<span class="hljs-type">Left</span> x) = <span class="hljs-type">Left</span> x
+</code></pre>
+<p>可以看到，Left构造子构造的类型数据可以充当报告错误信息的功能:</p>
+<pre class=><code>Prelude&gt; fmap (\s -&gt; &quot;the result: &quot; ++ s) $ Left &quot;error:overflow&quot;
+Left &quot;error:overflow&quot;
+Prelude&gt; fmap (\s -&gt; &quot;the result: &quot; ++ show s) $ Right 66
+Right &quot;the result: 66&quot;
+</code></pre>
+<p>来看看js中的例子:</p>
+<pre class=js><code><span class="hljs-keyword">var</span> moment = <span class="hljs-built_in">require</span>(<span class="hljs-string">'moment'</span>);
+
+<span class="hljs-comment">//  getAge :: Date -&gt; User -&gt; Either(String, Number)</span>
+<span class="hljs-keyword">var</span> getAge = curry(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">now, user</span>) </span>{
+  <span class="hljs-keyword">var</span> birthdate = moment(user.birthdate, <span class="hljs-string">'YYYY-MM-DD'</span>);
+  <span class="hljs-keyword">if</span>(!birthdate.isValid()) <span class="hljs-keyword">return</span> Left.of(<span class="hljs-string">"Birth date could not be parsed"</span>);
+  <span class="hljs-keyword">return</span> Right.of(now.diff(birthdate, <span class="hljs-string">'years'</span>));
+});
+
+getAge(moment(), {<span class="hljs-attr">birthdate</span>: <span class="hljs-string">'2005-12-12'</span>});
+<span class="hljs-comment">// Right(9)</span>
+
+getAge(moment(), {<span class="hljs-attr">birthdate</span>: <span class="hljs-string">'balloons!'</span>});
+<span class="hljs-comment">// Left("Birth date could not be parsed")</span>
+</code></pre>
+<h3>IO Functor</h3>
+<p>I/O同样也是<code>functor</code>：</p>
+<pre class=haskell><code><span class="hljs-class"><span class="hljs-keyword">instance</span>  <span class="hljs-type">Functor</span> <span class="hljs-type">IO</span> <span class="hljs-keyword">where</span></span>
+   fmap f x = x &gt;&gt;= (pure . f)
+</code></pre>
+<p>这里还得联系<code>Applicative Functor</code>和<code>Monad</code>:</p>
+<pre class=haskell><code><span class="hljs-class"><span class="hljs-keyword">instance</span> <span class="hljs-type">Applicative</span> <span class="hljs-type">IO</span> <span class="hljs-keyword">where</span></span>
+    pure  = returnIO
+    (*&gt;)  = thenIO
+    (&lt;*&gt;) = ap
+    liftA2 = liftM2
+
+<span class="hljs-comment">-- | @since 2.01</span>
+<span class="hljs-class"><span class="hljs-keyword">instance</span>  <span class="hljs-type">Monad</span> <span class="hljs-type">IO</span>  <span class="hljs-keyword">where</span></span>
+    (&gt;&gt;)      = (*&gt;)
+    (&gt;&gt;=)     = bindIO
+    fail s    = failIO s
+
+<span class="hljs-title">returnIO</span> :: a -&gt; <span class="hljs-type">IO</span> a
+<span class="hljs-title">bindIO</span> :: <span class="hljs-type">IO</span> a -&gt; (a -&gt; <span class="hljs-type">IO</span> b) -&gt; <span class="hljs-type">IO</span> b
+
+</code></pre>
+<p>而这里的<code>pure</code>实际上是对某常规值进行一个<code>IO</code>包装，例如</p>
+<pre class=haskell><code><span class="hljs-title">fmap</span> (\() -&gt; <span class="hljs-string">"hello  world"</span>) (putStrLn <span class="hljs-string">"hello"</span>) :: <span class="hljs-type">IO</span> [<span class="hljs-type">Char</span>]
+</code></pre>
+<p><code>putStrLn &quot;hello&quot;</code>返回值为<code>IO ()</code>，经过fmap的f参数一处理返回<code>[Char]</code>，再经过<code>pure</code>函数包装。</p>
+<p>其与下面这种异曲同工:</p>
+<pre class=haskell><code><span class="hljs-class"><span class="hljs-keyword">instance</span> <span class="hljs-type">Functor</span> <span class="hljs-type">IO</span> <span class="hljs-keyword">where</span></span>
+    fmap f action = <span class="hljs-keyword">do</span>
+        result &lt;- action
+        return (f result)
+</code></pre>
+<p>我们再来看看js中实现:</p>
+<pre class=js><code><span class="hljs-keyword">var</span> IO = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">f</span>) </span>{
+  <span class="hljs-keyword">this</span>.__value = f;
+}
+
+IO.of = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">x</span>) </span>{
+  <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> IO(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>) </span>{
+    <span class="hljs-keyword">return</span> x;
+  });
+}
+
+IO.prototype.fmap = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">f</span>) </span>{
+  <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> IO(_.compose(f, <span class="hljs-keyword">this</span>.__value));
+}
+</code></pre>
+<p>我们可以看到IO context中的值是一个函数，而这个函数可以对一些非纯的操作进行包装延迟执行，从而使得程序看起来还是纯的。</p>
+<p>举个例子:</p>
+<pre class=js><code><span class="hljs-comment">//  io_window_ :: IO Window</span>
+<span class="hljs-keyword">var</span> io_window = <span class="hljs-keyword">new</span> IO(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>)</span>{ <span class="hljs-keyword">return</span> <span class="hljs-built_in">window</span>; });
+
+io_window.fmap(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">win</span>)</span>{ <span class="hljs-keyword">return</span> win.innerWidth });
+<span class="hljs-comment">// IO(1430)</span>
+
+io_window.fmap(_.prop(<span class="hljs-string">'location'</span>)).fmap(_.prop(<span class="hljs-string">'href'</span>)).fmap(_.split(<span class="hljs-string">'/'</span>));
+<span class="hljs-comment">// IO(["http:", "", "localhost:8000", "blog", "posts"])</span>
+</code></pre>
+<p>上面的结果注释实际上是概念性的，实际上的返回值是诸如:</p>
+<pre class=js><code>IO {
+    <span class="hljs-attr">__value</span>: _.compose(_.split(<span class="hljs-string">'/'</span>),_.prop(<span class="hljs-string">'href'</span>),_.prop(<span class="hljs-string">'location'</span>),<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>)</span>{ <span class="hljs-keyword">return</span> <span class="hljs-built_in">window</span>; })
+}
+</code></pre>
+<p>每一次调用<code>fmap</code>实际上是把新的function加入到function compose队列最后。这样我们把一系列的不纯的操作包裹在了这样一个IO Functor context里。</p>
+<p>就如同haskell中的做法一样，我们在集中的一个地方去释放这些不纯的操作：</p>
+<pre class=js><code><span class="hljs-comment">////// 非纯调用代码: main.js ///////</span>
+
+<span class="hljs-comment">// 调用 __value() 来运行它！</span>
+IO.of(impureOperation.__value());
+</code></pre>
+<p>haskell也是将不纯操作放到<code>main do</code>块里，在<code>runhaskell</code>时，就释放里面的不纯操作并执行:</p>
+<pre class=haskell><code><span class="hljs-title">main</span> = <span class="hljs-keyword">do</span> line &lt;- fmap (intersperse '-' . reverse . map toUpper) getLine  
+          putStrLn line
+</code></pre>
+<h3>(-&gt;) r Functor</h3>
+<p>刚刚在IO Functor的js实现中我们谈到了function composition,这可以联想到函数本身也是一个在<code>(-&gt;) r</code> functor context下的值，其fmap实现就等同于function composition。</p>
+<p>看看instance定义:</p>
+<pre class=haskell><code><span class="hljs-class"><span class="hljs-keyword">instance</span> <span class="hljs-type">Functor</span> ((-&gt;) r) <span class="hljs-keyword">where</span></span>
+    fmap = (.)
+</code></pre>
+<p>而<code>(.) :: (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c</code>，而根据<code>fmap</code>定义:<code>fmap :: Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b</code>，用<code>(-&gt;) r</code>替换f，得到:<code>fmap :: (a -&gt; b) -&gt; (r -&gt; a) -&gt; (r -&gt; b)</code>恰好符合<code>.</code>的定义。即一个function composition。</p>
+<pre class=haskell><code><span class="hljs-title">ghci</span> &gt; fmap (show . (*<span class="hljs-number">3</span>)) (*<span class="hljs-number">100</span>) <span class="hljs-number">2</span>
+<span class="hljs-number">600</span>
+</code></pre>
+<h3>Functor laws</h3>
+<ol>
+<li>
+<p><code>fmap id = id</code>即用id去map over functor会返回跟原functor一样的functor。</p>
+</li>
+<li>
+<p><code>fmap (f . g) = fmap f . fmap g</code></p>
+</li>
+</ol>
+<p>或者js实现表示：</p>
+<pre class=js><code><span class="hljs-comment">// identity</span>
+map(id) === id;
+
+<span class="hljs-comment">// composition</span>
+compose(map(f), map(g)) === map(compose(f, g));
+</code></pre>
+<h2>Applicative Functor type class</h2>
+<p>之前讲到的Functor，我们只能对functor运用一个单参数函数。但是如果我们要将一个接受多个参数的函数运用到functor呢？这就要提到Applicative Functor,它可以让一个接受多个参数的函数运用到多个Functor上。</p>
+<p>首先是其定义:</p>
+<pre class=haskell><code><span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-type">Functor</span> f =&gt; <span class="hljs-type">Applicative</span> (<span class="hljs-title">f</span> :: * -&gt; *) <span class="hljs-keyword">where</span></span>
+  pure :: a -&gt; f a
+  (&lt;*&gt;) :: f (a -&gt; b) -&gt; f a -&gt; f b
+  (*&gt;) :: f a -&gt; f b -&gt; f b
+  (&lt;*) :: f a -&gt; f b -&gt; f a
+</code></pre>
+<p>来看看一个js关于<code>&lt;*&gt;</code>的实现：</p>
+<pre class=js><code>Container.prototype.ap = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">other_container</span>) </span>{
+  <span class="hljs-keyword">return</span> other_container.fmap(<span class="hljs-keyword">this</span>.__value);
+}
+</code></pre>
+<h3>Maybe Applicative</h3>
+<pre class=haskell><code><span class="hljs-class"><span class="hljs-keyword">instance</span> <span class="hljs-type">Applicative</span> <span class="hljs-type">Maybe</span> <span class="hljs-keyword">where</span></span>
+    pure = <span class="hljs-type">Just</span>
+
+    <span class="hljs-type">Just</span> f  &lt;*&gt; m       = fmap f m
+    <span class="hljs-type">Nothing</span> &lt;*&gt; _m      = <span class="hljs-type">Nothing</span>
+</code></pre>
+<pre class=><code>ghci&gt; pure (+) &lt;*&gt; Just 3 &lt;*&gt; Just 5  
+Just 8  
+ghci&gt; pure (+) &lt;*&gt; Just 3 &lt;*&gt; Nothing  
+Nothing  
+ghci&gt; pure (+) &lt;*&gt; Nothing &lt;*&gt; Just 5  
+Nothing
+</code></pre>
+<p>这让我们能够以一种从左到右的方式去应用函数到多个Functors:</p>
+<pre class=js><code>Maybe.of(_.add).ap(Maybe.of(<span class="hljs-number">2</span>)).ap(Maybe.of(<span class="hljs-number">3</span>));
+</code></pre>
+<p>而<code>pure (+) &lt;*&gt; Just 3</code>这种完全可以用<code>fmap (+) Just 3</code>代替，有一个<code>&lt;$&gt;</code>就是做这个的:</p>
+<pre class=haskell><code>(&lt;$&gt;) :: (<span class="hljs-type">Functor</span> f) =&gt; (a -&gt; b) -&gt; f a -&gt; f b  
+<span class="hljs-title">f</span> &lt;$&gt; x = fmap f x
+</code></pre>
+<p>这样就可以这样写:<code>(++) &lt;$&gt; Just &quot;johntra&quot; &lt;*&gt; Just &quot;volta&quot;</code>就可以直接将一个普通函数用到applicative functor上了。</p>
+<p>从js角度来看：</p>
+<pre class=js><code>F.of(x).fmap(f) == F.of(f).ap(F.of(x))
+</code></pre>
+<p>那么上面的例子同意可以转换为：</p>
+<pre class=><code>Maybe.of(2).fmap(_.add).ap(Maybe.of(3));
+</code></pre>
+<h3>List Applicative</h3>
+<pre class=haskell><code><span class="hljs-class"><span class="hljs-keyword">instance</span> <span class="hljs-type">Applicative</span> [] <span class="hljs-keyword">where</span></span>
+    pure x    = [x]
+    fs &lt;*&gt; xs = [f x | f &lt;- fs, x &lt;- xs]
+</code></pre>
+<p>可以看到<code>&lt;*&gt;</code>是将左右两个<code>[]</code>进行任意组合，左边的包含了多个函数，右边包含了多个原始值。</p>
+<pre class=haskell><code><span class="hljs-title">ghci</span>&gt; (++) &lt;$&gt; [<span class="hljs-string">"ha"</span>,<span class="hljs-string">"heh"</span>,<span class="hljs-string">"hmm"</span>] &lt;*&gt; [<span class="hljs-string">"?"</span>,<span class="hljs-string">"!"</span>,<span class="hljs-string">"."</span>]  
+[<span class="hljs-string">"ha?"</span>,<span class="hljs-string">"ha!"</span>,<span class="hljs-string">"ha."</span>,<span class="hljs-string">"heh?"</span>,<span class="hljs-string">"heh!"</span>,<span class="hljs-string">"heh."</span>,<span class="hljs-string">"hmm?"</span>,<span class="hljs-string">"hmm!"</span>,<span class="hljs-string">"hmm."</span>]
+</code></pre>
+<p>来看看ramdajs关于List的<code>ap</code>实现：</p>
+<pre class=js><code>R.ap([R.multiply(<span class="hljs-number">2</span>), R.add(<span class="hljs-number">3</span>)], [<span class="hljs-number">1</span>,<span class="hljs-number">2</span>,<span class="hljs-number">3</span>]); <span class="hljs-comment">//=&gt; [2, 4, 6, 4, 5, 6]</span>
+</code></pre>
+<p>显然它们是异曲同工。</p>
+<h3>IO Applicative</h3>
+<p>首先是定义:</p>
+<pre class=haskell><code><span class="hljs-class"><span class="hljs-keyword">instance</span> <span class="hljs-type">Applicative</span> <span class="hljs-type">IO</span> <span class="hljs-keyword">where</span></span>
+    pure  = returnIO
+    (&lt;*&gt;) = ap
+<span class="hljs-title">ap</span>                :: (<span class="hljs-type">Monad</span> m) =&gt; m (a -&gt; b) -&gt; m a -&gt; m b
+<span class="hljs-title">ap</span> m1 m2          = <span class="hljs-keyword">do</span> { x1 &lt;- m1; x2 &lt;- m2; return (x1 x2) }
+</code></pre>
+<p>终于看到了<code>ap</code>，也就是<code>&lt;*&gt;</code>的别名。换种写法:</p>
+<pre class=haskell><code><span class="hljs-class"><span class="hljs-keyword">instance</span> <span class="hljs-type">Applicative</span> <span class="hljs-type">IO</span> <span class="hljs-keyword">where</span></span>  
+    pure = return  
+    a &lt;*&gt; b = <span class="hljs-keyword">do</span>  
+        f &lt;- a  
+        x &lt;- b  
+        return (f x)
+</code></pre>
+<p>即<code>(&lt;*&gt;) :: IO (a -&gt; b) -&gt; IO a -&gt; IO b</code>。</p>
+<p>以<code>(++) &lt;$&gt; getLine &lt;*&gt; getLine</code>为例，<code>getLine :: IO String</code>，<code>fmap (++) getLine</code>结果就是<code>fmap (++) getLine :: IO ([Char] -&gt; [Char])</code>，即从第一个<code>getLine</code>里取出结果<code>str1</code>，map over<code>(++)</code>得到<code>IO (++str1)</code>，来到<code>&lt;*&gt;</code>，将<code>(++str1)</code>取出应用到第二个参数的IO上，最后通过<code>return</code>封装成<code>IO ([Char])</code>。</p>
+<p>来看一个js中的例子：</p>
+<pre class=js><code><span class="hljs-comment">// 帮助函数：</span>
+<span class="hljs-comment">// ==============</span>
+<span class="hljs-comment">//  $ :: String -&gt; IO DOM</span>
+<span class="hljs-keyword">var</span> $ = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">selector</span>) </span>{
+  <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> IO(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>)</span>{ <span class="hljs-keyword">return</span> <span class="hljs-built_in">document</span>.querySelector(selector) });
+}
+
+<span class="hljs-comment">//  getVal :: String -&gt; IO String</span>
+<span class="hljs-keyword">var</span> getVal = _.compose(map(_.prop(<span class="hljs-string">'value'</span>)), $);
+
+<span class="hljs-comment">// Example:</span>
+<span class="hljs-comment">// ===============</span>
+<span class="hljs-comment">//  signIn :: String -&gt; String -&gt; Bool -&gt; User</span>
+<span class="hljs-keyword">var</span> signIn = _.curry(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">username, password, remember_me</span>)</span>{ <span class="hljs-comment">/* signing in */</span>  })
+
+IO.of(signIn).ap(getVal(<span class="hljs-string">'#email'</span>)).ap(getVal(<span class="hljs-string">'#password'</span>)).ap(IO.of(<span class="hljs-literal">false</span>));
+<span class="hljs-comment">// IO({id: 3, email: "gg@allin.com"})</span>
+</code></pre>
+<p>按照上一节关于IO fmap实现，实际最后的返回结果：</p>
+<pre class=js><code>IO {
+    <span class="hljs-attr">unsafePerformIO</span>: _.compose(<span class="hljs-function"><span class="hljs-params">remember_me</span>=&gt;</span>{},()=&gt;<span class="hljs-literal">false</span>)
+}
+</code></pre>
+<h3>(-&gt;) r　Applicative</h3>
+<pre class=haskell><code><span class="hljs-class"><span class="hljs-keyword">instance</span> <span class="hljs-type">Applicative</span> ((-&gt;) a) <span class="hljs-keyword">where</span></span>
+    pure = const
+    (&lt;*&gt;) f g x = f x (g x)　<span class="hljs-comment">-- f &lt;*&gt; g = \x -&gt; f x (g x)</span>
+</code></pre>
+<p><code>(+) &lt;$&gt; (+3) &lt;*&gt; (*100) $ 5</code>结果为<code>508</code>，<code>(+) &lt;$&gt; (+3)</code>相当于<code>(+)</code>和<code>(+3)</code>组合，而这两个组合的结果<code>(+) &lt;$&gt; (+3) :: Num a =&gt; a -&gt; a -&gt; a</code>，返回一个接受两个参数的函数，第一个参数用于(+3)，结果再和第二个参数一起调用(+)。</p>
+<pre class=><code>ghci&gt; (\x y z -&gt; [x,y,z]) &lt;$&gt; (+3) &lt;*&gt; (*2) &lt;*&gt; (/2) $ 5  
+[8.0,10.0,2.5]
+</code></pre>
+<h3>lift</h3>
+<pre class=haskell><code><span class="hljs-title">liftA2</span> :: (<span class="hljs-type">Applicative</span> f) =&gt; (a -&gt; b -&gt; c) -&gt; f a -&gt; f b -&gt; f c  
+<span class="hljs-title">liftA2</span> f a b = f &lt;$&gt; a &lt;*&gt; b
+</code></pre>
+<p>同理，在js中实现:</p>
+<pre class=js><code><span class="hljs-keyword">var</span> liftA2 = curry(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">f, functor1, functor2</span>) </span>{
+  <span class="hljs-keyword">return</span> functor1.map(f).ap(functor2);
+});
+
+<span class="hljs-keyword">var</span> liftA3 = curry(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">f, functor1, functor2, functor3</span>) </span>{
+  <span class="hljs-keyword">return</span> functor1.map(f).ap(functor2).ap(functor3);
+});
+</code></pre>
+<p>或者看看ramda关于lift实现:</p>
+<pre class=js><code><span class="hljs-keyword">var</span> madd3 = R.lift(<span class="hljs-function">(<span class="hljs-params">a, b, c</span>) =&gt;</span> a + b + c);
+
+madd3([<span class="hljs-number">1</span>,<span class="hljs-number">2</span>,<span class="hljs-number">3</span>], [<span class="hljs-number">1</span>,<span class="hljs-number">2</span>,<span class="hljs-number">3</span>], [<span class="hljs-number">1</span>]); <span class="hljs-comment">//=&gt; [3, 4, 5, 4, 5, 6, 5, 6, 7]</span>
+</code></pre>
+<p>这样程序写法上就更加通用，因为没有体现具体的functor:</p>
+<pre class=js><code>liftA2(add, Maybe.of(<span class="hljs-number">2</span>), Maybe.of(<span class="hljs-number">3</span>));
+<span class="hljs-comment">// Maybe(5)</span>
+
+liftA2(renderPage, Http.get(<span class="hljs-string">'/destinations'</span>), Http.get(<span class="hljs-string">'/events'</span>))
+<span class="hljs-comment">// Task("&lt;div&gt;some page with dest and events&lt;/div&gt;")</span>
+
+liftA3(signIn, getVal(<span class="hljs-string">'#email'</span>), getVal(<span class="hljs-string">'#password'</span>), IO.of(<span class="hljs-literal">false</span>));
+<span class="hljs-comment">// IO({id: 3, email: "gg@allin.com"})</span>
+</code></pre>
+<h3>与Functor,Monad转换</h3>
+<pre class=haskell><code><span class="hljs-comment">-- Applicative实现fmap:</span>
+<span class="hljs-title">fmap</span> (<span class="hljs-string">"hello "</span>++) (<span class="hljs-type">Just</span> <span class="hljs-string">"luoxia"</span>)
+<span class="hljs-title">pure</span> (<span class="hljs-string">"hello "</span>++) &lt;*&gt; <span class="hljs-type">Just</span> <span class="hljs-string">"luoxia"</span>
+
+<span class="hljs-comment">-- Monad实现fmap:</span>
+<span class="hljs-title">fmap</span> (<span class="hljs-string">"hello "</span>++) (<span class="hljs-type">Just</span> <span class="hljs-string">"luoxia"</span>)
+<span class="hljs-type">Just</span> <span class="hljs-string">"luoxia"</span> &gt;&gt;= (\name -&gt; <span class="hljs-type">Just</span> (<span class="hljs-string">"hello "</span> ++ name))
+
+<span class="hljs-comment">-- Monad实现 &lt;*&gt;:</span>
+<span class="hljs-title">pure</span> (<span class="hljs-string">"hello "</span>++) &lt;*&gt; <span class="hljs-type">Just</span> <span class="hljs-string">"luoxia"</span>
+<span class="hljs-title">pure</span> (<span class="hljs-string">"hello "</span>++) &gt;&gt;= (\f -&gt; fmap f (<span class="hljs-type">Just</span> <span class="hljs-string">"luoxia"</span>))
+</code></pre>
+<p>js角度：</p>
+<pre class=js><code><span class="hljs-comment">// 从 of/ap 衍生出的 fmap</span>
+X.prototype.fmap = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">f</span>) </span>{
+  <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.constructor.of(f).ap(<span class="hljs-keyword">this</span>);
+}
+<span class="hljs-comment">// 从 chain 衍生出的 map</span>
+X.prototype.fmap = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">f</span>) </span>{
+  <span class="hljs-keyword">var</span> m = <span class="hljs-keyword">this</span>;
+  <span class="hljs-keyword">return</span> m.chain(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">a</span>) </span>{
+    <span class="hljs-keyword">return</span> m.constructor.of(f(a));
+  });
+}
+
+<span class="hljs-comment">// 从 chain/map 衍生出的 ap</span>
+X.prototype.ap = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">other</span>) </span>{
+  <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.chain(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">f</span>) </span>{
+    <span class="hljs-keyword">return</span> other.fmap(f);
+  });
+};
+</code></pre>
+<h2>Monoids</h2>
+<p>幺半群是一个存在单位元（幺元）的半群。满足结合律，有单位元。一个 monoid 是你有一个遵守结合律的二元函数还有一个可以相对于那个函数作为 identity 的值。</p>
+<p>haskell中关于Monoids class的定义:</p>
+<pre class=haskell><code><span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-type">Monoid</span> a <span class="hljs-keyword">where</span></span>
+  mempty :: a          <span class="hljs-comment">-- 表示一个特定 monoid 的 identity</span>
+  mappend :: a -&gt; a -&gt; a    <span class="hljs-comment">-- 接受两个 monoid 的值并回传另外一个</span>
+  mconcat :: [a] -&gt; a
+</code></pre>
+<p>这样就可以得出monoid的laws:</p>
+<ol>
+<li>mempty <code>mappend</code> x = x</li>
+<li>x <code>mappend</code> mempty = x</li>
+<li>(x <code>mappend</code> y) <code>mappend</code> z = x <code>mappend</code> (y <code>mappend</code> z)</li>
+</ol>
+<h3>Monoids instance</h3>
+<p>List :</p>
+<pre class=haskell><code><span class="hljs-class"><span class="hljs-keyword">instance</span> <span class="hljs-type">Monoid</span> [a] <span class="hljs-keyword">where</span></span>
+        mempty  = []
+        mappend = (++)
+        mconcat xss = [x | xs &lt;- xss, x &lt;- xs]
+</code></pre>
+<p>Product and Sum:</p>
+<p>由于数值类型的数据可以有不同的monoid实现，如<code>*做二元函数，1作幺元</code>或者<code>+做二元函数,0作幺元</code>。</p>
+<p>要通过两种方式实现，就如同用随机组合和链式两种方式实现List的<code>Applicative instance</code>定义一样，可以用<code>newtype</code>方式实现。这方面我的另外一篇关于<code>Haskell类型系统</code>的总结有说明。</p>
+<p>以<code>Product</code>为例:</p>
+<pre class=haskell><code><span class="hljs-class"><span class="hljs-keyword">newtype</span> <span class="hljs-type">Product</span> a =  <span class="hljs-type">Product</span> { <span class="hljs-title">getProduct</span> :: <span class="hljs-title">a</span> }  </span>
+    <span class="hljs-keyword">deriving</span> (<span class="hljs-type">Eq</span>, <span class="hljs-type">Ord</span>, <span class="hljs-type">Read</span>, <span class="hljs-type">Show</span>, <span class="hljs-type">Bounded</span>)
+<span class="hljs-class">
+<span class="hljs-keyword">instance</span> <span class="hljs-type">Num</span> a =&gt; <span class="hljs-type">Monoid</span> (<span class="hljs-type">Product</span> <span class="hljs-title">a</span>) <span class="hljs-keyword">where</span></span>  
+    mempty = <span class="hljs-type">Product</span> <span class="hljs-number">1</span>  
+    <span class="hljs-type">Product</span> x `mappend` <span class="hljs-type">Product</span> y = <span class="hljs-type">Product</span> (x * y)
+</code></pre>
+<p>即<code>getProduct $ Product 3</code>mappend<code>Product 9</code>得　27.</p>
+<p>Any and ALL用于定义Bool数据的两种不同monoid实现。</p>
+<p>The Ordering monoid:</p>
+<pre class=haskell><code><span class="hljs-class"><span class="hljs-keyword">instance</span> <span class="hljs-type">Monoid</span> <span class="hljs-type">Ordering</span> <span class="hljs-keyword">where</span></span>
+        mempty         = <span class="hljs-type">EQ</span>
+        <span class="hljs-type">LT</span> `mappend` _ = <span class="hljs-type">LT</span>
+        <span class="hljs-type">EQ</span> `mappend` y = y
+        <span class="hljs-type">GT</span> `mappend` _ = <span class="hljs-type">GT</span>
+</code></pre>
+<p>这个可以运用到对于两个数据进行多种方式比较，但不同方式之间有先后顺序时，如:</p>
+<pre class=haskell><code><span class="hljs-title">lengthCompare</span> :: <span class="hljs-type">String</span> -&gt; <span class="hljs-type">String</span> -&gt; <span class="hljs-type">Ordering</span>  
+<span class="hljs-title">lengthCompare</span> x y = (length x `compare` length y) `mappend`  
+                    (vowels x `compare` vowels y) `mappend`  
+                    (x `compare` y)  
+    <span class="hljs-keyword">where</span> vowels = length . filter (`elem` <span class="hljs-string">"aeiou"</span>)
+</code></pre>
+<p>Maybe the monoid:</p>
+<pre class=haskell><code><span class="hljs-class"><span class="hljs-keyword">instance</span> <span class="hljs-type">Monoid</span> a =&gt; <span class="hljs-type">Monoid</span> (<span class="hljs-type">Maybe</span> <span class="hljs-title">a</span>) <span class="hljs-keyword">where</span></span>
+  mempty = <span class="hljs-type">Nothing</span>
+  <span class="hljs-type">Nothing</span> `mappend` m = m
+  m `mappend` <span class="hljs-type">Nothing</span> = m
+  <span class="hljs-type">Just</span> m1 `mappend` <span class="hljs-type">Just</span> m2 = <span class="hljs-type">Just</span> (m1 `mappend` m2)
+</code></pre>
+<h2>Monad type class</h2>
+<p>前面讲了Functor和Applicative Functor，接下来我们要讲讲Monad，这玩意儿着实不好理解。这里仅作为个人学习总结，不代表能够作为学习参考用。</p>
+<p>之前的Functor是: <code>(a -&gt; b) -&gt; f a -&gt; f b</code>，而Applicative是:<code>f (a -&gt; b) -&gt; f a -&gt; f b</code>，然后Monad要求是：<code>(Monad m) =&gt; m a -&gt; (a -&gt; m b) -&gt; m b</code></p>
+<p>先来看看typeclass定义:</p>
+<pre class=haskell><code><span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-type">Applicative</span> m =&gt; <span class="hljs-type">Monad</span> m <span class="hljs-keyword">where</span></span>
+    (&gt;&gt;=)       :: m a -&gt; (a -&gt; m b) -&gt; m b
+
+    (&gt;&gt;)        :: m a -&gt; m b -&gt; m b
+    m &gt;&gt; k = m &gt;&gt;= \_ -&gt; k
+
+    return      :: a -&gt; m a
+    return      = pure
+
+    fail        :: <span class="hljs-type">String</span> -&gt; m a
+    fail s      = errorWithoutStackTrace s
+</code></pre>
+<p>我们可以联想到fmap实现，它们的区别是，fmap的函数会返回普通值，而<code>&gt;&gt;=</code>的函数会返回经过Monad context包装的值，如果考虑到直接将函数通过fmap运用到monad,函数的返回值还会再在外面包装一层Monad context,这样就成了两层context:</p>
+<pre class=><code>Prelude&gt; fmap (\s -&gt; Just (s++&quot;,haha&quot;)) (Just &quot;luoxia&quot;)
+Just (Just &quot;luoxia,haha&quot;)
+</code></pre>
+<p>js例子：</p>
+<pre class=js><code><span class="hljs-comment">//  safeProp :: Key -&gt; {Key: a} -&gt; Maybe a</span>
+<span class="hljs-keyword">var</span> safeProp = curry(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">x, obj</span>) </span>{
+  <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> Maybe(obj[x]);
+});
+
+<span class="hljs-comment">//  safeHead :: [a] -&gt; Maybe a</span>
+<span class="hljs-keyword">var</span> safeHead = safeProp(<span class="hljs-number">0</span>);
+
+<span class="hljs-comment">//  firstAddressStreet :: User -&gt; Maybe (Maybe (Maybe Street) )</span>
+<span class="hljs-keyword">var</span> firstAddressStreet = compose(
+  map(map(safeProp(<span class="hljs-string">'street'</span>))), map(safeHead), safeProp(<span class="hljs-string">'addresses'</span>)
+);
+
+firstAddressStreet(
+  {<span class="hljs-attr">addresses</span>: [{<span class="hljs-attr">street</span>: {<span class="hljs-attr">name</span>: <span class="hljs-string">'Mulburry'</span>, <span class="hljs-attr">number</span>: <span class="hljs-number">8402</span>}, <span class="hljs-attr">postcode</span>: <span class="hljs-string">"WC2N"</span> }]}
+);
+<span class="hljs-comment">// Maybe(Maybe(Maybe({name: 'Mulburry', number: 8402})))</span>
+</code></pre>
+<p>可以看到，<code>firstAddressStreet</code>组合函数的最后一个map调用为:<code>map(map(safeProp('street')))</code>，因为经历过前两个函数调用，实际的结果为：<code>Maybe(Maybe({street: {name: 'Mulburry', number: 8402}, postcode: &quot;WC2N&quot; }))</code>，用得到的对象被包了两层context,对其使用map，就得剥开两层。</p>
+<p>这就好比洋葱，一层一层剥开你的心，会悲伤，会流泪。</p>
+<p>而<code>&gt;&gt;=</code>的作用就是替我们剥开那多的一层外衣：</p>
+<pre class=js><code>Maybe.prototype.join = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>) </span>{
+  <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.isNothing() ? Maybe.of(<span class="hljs-literal">null</span>) : <span class="hljs-keyword">this</span>.__value;
+}
+
+<span class="hljs-comment">//  join :: Monad m =&gt; m (m a) -&gt; m a</span>
+<span class="hljs-keyword">var</span> join = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">mma</span>)</span>{ <span class="hljs-keyword">return</span> mma.join(); }
+
+<span class="hljs-comment">//  firstAddressStreet :: User -&gt; Maybe Street</span>
+<span class="hljs-keyword">var</span> firstAddressStreet = compose(
+  join, map(safeProp(<span class="hljs-string">'street'</span>)), join, map(safeHead), safeProp(<span class="hljs-string">'addresses'</span>)
+);
+
+firstAddressStreet(
+  {<span class="hljs-attr">addresses</span>: [{<span class="hljs-attr">street</span>: {<span class="hljs-attr">name</span>: <span class="hljs-string">'Mulburry'</span>, <span class="hljs-attr">number</span>: <span class="hljs-number">8402</span>}, <span class="hljs-attr">postcode</span>: <span class="hljs-string">"WC2N"</span> }]}
+);
+<span class="hljs-comment">// Maybe({name: 'Mulburry', number: 8402})</span>
+</code></pre>
+<p>显然这还不够，要是我们能够将剥开多余外衣的操作和map操作合并就好了，那样就是我们的<code>&gt;&gt;=</code>真正要实现的:</p>
+<pre class=js><code><span class="hljs-comment">//  chain :: Monad m =&gt; (a -&gt; m b) -&gt; m a -&gt; m b</span>
+<span class="hljs-keyword">var</span> chain = curry(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">f, m</span>)</span>{
+  <span class="hljs-keyword">return</span> m.map(f).join(); <span class="hljs-comment">// 或者 compose(join, map(f))(m)</span>
+});
+
+<span class="hljs-comment">// map/join</span>
+<span class="hljs-keyword">var</span> firstAddressStreet = compose(
+  join, map(safeProp(<span class="hljs-string">'street'</span>)), join, map(safeHead), safeProp(<span class="hljs-string">'addresses'</span>)
+);
+
+<span class="hljs-comment">// chain</span>
+<span class="hljs-keyword">var</span> firstAddressStreet = compose(
+  chain(safeProp(<span class="hljs-string">'street'</span>)), chain(safeHead), safeProp(<span class="hljs-string">'addresses'</span>)
+);
+</code></pre>
+<p>或者换一种写法：</p>
+<pre class=js><code><span class="hljs-keyword">let</span> result = Maybe.of(<span class="hljs-number">3</span>).chain(<span class="hljs-function"><span class="hljs-params">three</span> =&gt;</span> 
+    Maybe.of(<span class="hljs-number">2</span>).fmap(_.add(three))
+).chain(<span class="hljs-function"><span class="hljs-params">sum</span> =&gt;</span> 
+    Maybe.of(_.append(sum,[<span class="hljs-number">7</span>,<span class="hljs-number">6</span>]))
+)
+</code></pre>
+<p>咋这么眼熟呢？对，跟Promise贼像。这就是链式调用。</p>
+<h3>Maybe Monad</h3>
+<pre class=haskell><code><span class="hljs-class"><span class="hljs-keyword">instance</span>  <span class="hljs-type">Monad</span> <span class="hljs-type">Maybe</span>  <span class="hljs-keyword">where</span></span>
+    (<span class="hljs-type">Just</span> x) &gt;&gt;= k      = k x
+    <span class="hljs-type">Nothing</span>  &gt;&gt;= _      = <span class="hljs-type">Nothing</span>
+
+    (&gt;&gt;) = (*&gt;)
+
+    fail _              = <span class="hljs-type">Nothing</span>
+</code></pre>
+<p>例子:</p>
+<pre class=haskell><code><span class="hljs-title">landLeft</span> :: <span class="hljs-type">Birds</span> -&gt; <span class="hljs-type">Pole</span> -&gt; <span class="hljs-type">Maybe</span> <span class="hljs-type">Pole</span>  
+<span class="hljs-title">landLeft</span> n (left,right)  
+    | abs ((left + n) - right) &lt; <span class="hljs-number">4</span> = <span class="hljs-type">Just</span> (left + n, right)  
+    | otherwise                    = <span class="hljs-type">Nothing</span>  
+
+<span class="hljs-title">landRight</span> :: <span class="hljs-type">Birds</span> -&gt; <span class="hljs-type">Pole</span> -&gt; <span class="hljs-type">Maybe</span> <span class="hljs-type">Pole</span>  
+<span class="hljs-title">landRight</span> n (left,right)  
+    | abs (left - (right + n)) &lt; <span class="hljs-number">4</span> = <span class="hljs-type">Just</span> (left, right + n)  
+    | otherwise                    = <span class="hljs-type">Nothing</span>
+
+<span class="hljs-title">return</span> (<span class="hljs-number">0</span>,<span class="hljs-number">0</span>) &gt;&gt;= landLeft <span class="hljs-number">1</span> &gt;&gt; <span class="hljs-type">Nothing</span> &gt;&gt;= landRight <span class="hljs-number">1</span>  <span class="hljs-comment">--Nothing</span>
+</code></pre>
+<p>这里的<code>&gt;&gt;</code>对于Maybe是在<code>Applicative instance</code>定义的：</p>
+<pre class=haskell><code><span class="hljs-type">Just</span> _m1 *&gt; m2      = m2
+<span class="hljs-type">Nothing</span>  *&gt; _m2     = <span class="hljs-type">Nothing</span>
+</code></pre>
+<p>换成<code>do</code>写法:</p>
+<pre class=haskell><code><span class="hljs-title">routine</span> :: <span class="hljs-type">Maybe</span> <span class="hljs-type">Pole</span>  
+<span class="hljs-title">routine</span> = <span class="hljs-keyword">do</span>  
+    start &lt;- return (<span class="hljs-number">0</span>,<span class="hljs-number">0</span>)  
+    first &lt;- landLeft １ start  
+    <span class="hljs-type">Nothing</span>  
+    second &lt;- landRight １ first  
+    landLeft <span class="hljs-number">1</span> second
+</code></pre>
+<h3>List Monad</h3>
+<pre class=haskell><code><span class="hljs-class"><span class="hljs-keyword">instance</span> <span class="hljs-type">Monad</span> []  <span class="hljs-keyword">where</span></span>
+    xs &gt;&gt;= f             = [y | x &lt;- xs, y &lt;- f x]
+    (&gt;&gt;) = (*&gt;)
+    fail _              = []
+</code></pre>
+<p>例子：</p>
+<pre class=><code>ghci&gt; [1,2] &gt;&gt;= \n -&gt; ['a','b'] &gt;&gt;= \ch -&gt; return (n,ch)  
+[(1,'a'),(1,'b'),(2,'a'),(2,'b')]
+</code></pre>
+<p>换种写法:</p>
+<pre class=haskell><code><span class="hljs-title">listOfTuples</span> :: [(<span class="hljs-type">Int</span>,<span class="hljs-type">Char</span>)]  
+<span class="hljs-title">listOfTuples</span> = <span class="hljs-keyword">do</span>  
+    n &lt;- [<span class="hljs-number">1</span>,<span class="hljs-number">2</span>]  
+    ch &lt;- ['a','b']  
+    return (n,ch)
+</code></pre>
+<p><img src="https://learnyoua.haskell.sg/content/zh-cn/ch12/concatmap.png" alt="https://learnyoua.haskell.sg/content/zh-cn/ch12/concatmap.png"></p>
+<p>实际上<code>[ (n,ch) | n &lt;- [1,2], ch &lt;- ['a','b'] ]</code>就是上面写法的一种语法糖。</p>
+<p>再来个例子:</p>
+<pre class=haskell><code><span class="hljs-title">guard</span> :: (<span class="hljs-type">MonadPlus</span> m) =&gt; <span class="hljs-type">Bool</span> -&gt; m ()  
+<span class="hljs-title">guard</span> <span class="hljs-type">True</span> = return ()  
+<span class="hljs-title">guard</span> <span class="hljs-type">False</span> = mzero
+
+[<span class="hljs-number">1.</span><span class="hljs-number">.50</span>] &gt;&gt;= (\x -&gt; guard ('<span class="hljs-number">7</span>' `elem` show x) &gt;&gt; return x) 　<span class="hljs-comment">--[7,17,27,37,47]</span>
+</code></pre>
+<p>这里引用<code>Control.Monad</code>中的<code>guard</code>函数，传递一个Bool参数，回传一个<code>MonadPlus instance</code>包装的数据，这里List在<code>guard True</code>下返回<code>[()]</code>，否则返回<code>[]</code>。</p>
+<p>而对于List的<code>&gt;&gt;</code>在<code>Applicative instance</code>定义:</p>
+<pre class=haskell><code><span class="hljs-title">xs</span> *&gt; ys  = [y | _ &lt;- xs, y &lt;- ys]
+</code></pre>
+<p>当<code>[()] &gt;&gt; return x</code>的时候，返回<code>[x]</code>，当<code>[] &gt;&gt; return x</code>的时候，返回<code>[]</code>，这个不难理解。这样就起到了filter的作用。</p>
+<p>也可以换成下面这种写法:</p>
+<pre class=haskell><code><span class="hljs-title">sevensOnly</span> :: [<span class="hljs-type">Int</span>]  
+<span class="hljs-title">sevensOnly</span> = <span class="hljs-keyword">do</span>  
+    x &lt;- [<span class="hljs-number">1.</span><span class="hljs-number">.50</span>]  
+    guard ('<span class="hljs-number">7</span>' `elem` show x)  
+    return x
+</code></pre>
+<p>可见guard这句不进行<code>&lt;-</code>，就相当于在其后用<code>&gt;&gt;</code></p>
+<p><strong>未完待续...</strong></p>
+
+    </div>
+  </div>
+
+       
+        <div id="footer">
+            © 2017 <a href="#">laoqiren</a>
+            主题提供: <a href="https://github.com/laoqiren/yohe">Yohe</a>
+            Powered By <a href="https://github.com/laoqiren/yohe">Yohe</a>
+            图片存储: <a href="http://www.qiniu.com/">qiniu</a>
+        </div>
+    </div>
+
+    
+    <script>hljs.initHighlightingOnLoad();</script>

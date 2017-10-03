@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="/yohe_site/assets/css/layout.css">
+    
+  <link rel="stylesheet"
+  href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/railscasts.min.css">
+  <link rel="stylesheet" href="/yohe_site/assets/css/post.css"/>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+
+    <title>
+    My Blog
+</title>
+</head>
+<body>
+
+    <div id="container">
+        <div id="nav">
+            <div class="site-header-info">
+                <a href="/yohe_site/">
+                    <img src="https://avatars2.githubusercontent.com/u/16136702?v=4&s=120" width="100" height="100"/>
+                </a>
+                <h1 class="site-title">My Blog</h1>
+                <h2 class="site-description">爱技术，爱生活</h2>
+            </div>
+
+            
+  <div class="post-info">
+    <div class="site-published-separator"></div>
+    <h2 class="site-published">Published</h2>
+    <h2 class="site-publish-date">2017-05-30</h2>
+  </div>
+ 
+        </div>
+
+        
+  <div class="post-content">
+    <div class="post-header">
+      <h2 class="post-cate">in 云计算</h2>
+      <h1>一个私有云实例的起步</h1>
+    </div>
+    <div class="post-content">
+        <p>只是一个简单的开始。</p>
+<!--more-->
+<p>当云计算老师要求我们在自己笔记本上搭建私有云时我一开始是拒绝的，多耗资源的玩意儿啊，弄一个最低配单机版的，内存就要求动不动就4G+，磁盘40G+。。。</p>
+<p>这一折腾下来，还是学到了不少，总结下一些坑吧。</p>
+<p><strong>资源有限，所有组件在一台虚拟机(all-in-one),客户机为ubuntu 14.04 server版</strong></p>
+<h2>虚拟化那些事儿</h2>
+<p>这里放一张我画的简单思维导图吧：
+<img src="http://7xsi10.com1.z0.glb.clouddn.com/%E8%99%9A%E6%8B%9F%E5%8C%96%E6%8A%80%E6%9C%AF%20.png" alt="virtual technology"></p>
+<h2>网络配置那些事儿</h2>
+<p>一开始我是选择VirtualBox来搭建的，但在网络配置过程中遇到了一些坑:</p>
+<p>与VMWare不同，VirtualBox只虚拟了一张网卡类似于VMWare的VMnet8，而没有用于宿主机连接客户机的host-only网卡。由于客户os是ubuntu server版，到时候访问dashboard不得不需要宿主机连接客户机。于是又加一张host-only网卡。</p>
+<p>结果发现一个问题：</p>
+<p>在NAT网络正常情况下，临时通过ifconfig来为host网卡配置静态ip，世界美好，但是，当我将配置写入文件时，NAT就挂了，目前还没找到解决方案。</p>
+<p>还有一个问题，我尝试为NAT网卡分配静态IP，发现行不通。</p>
+<p>最终还是投奔VMWare,简单粗暴的NAT网卡，可以禁用DHCP,可以ping通客户机。
+<img src="http://7xsi10.com1.z0.glb.clouddn.com/2017-05-30%2014-06-07%E5%B1%8F%E5%B9%95%E6%88%AA%E5%9B%BE.png" alt=""></p>
+<p><img src="http://7xsi10.com1.z0.glb.clouddn.com/2017-05-29%2014-04-19%E5%B1%8F%E5%B9%95%E6%88%AA%E5%9B%BE.png" alt=""></p>
+<h3>为openstack Neutron配置网络</h3>
+<p>openstck主机的ip与NAT网卡ip相同:</p>
+<pre class=><code>HOST_IP=172.16.38.101
+</code></pre>
+<p>为了外网能够访问dashboard，让br-ex网桥和客户机NAT网卡关联:</p>
+<pre class=><code>## Neutron options
+Q_USE_SECGROUP=True
+FLOATING_RANGE=&quot;172.16.38.105/24&quot;
+FIXED_RANGE=&quot;10.0.0.0/24&quot;
+Q_FLOATING_ALLOCATION_POOL=start=172.16.38.130,end=172.16.38.138
+PUBLIC_NETWORK_GATEWAY=&quot;172.16.38.2&quot;
+Q_L3_ENABLED=True
+PUBLIC_INTERFACE=eth0
+Q_USE_PROVIDERNET_FOR_PUBLIC=True
+OVS_PHYSICAL_BRIDGE=br-ex
+PUBLIC_BRIDGE=br-ex
+OVS_BRIDGE_MAPPINGS=public:br-ex
+</code></pre>
+<p>安装好后可以通过<code>ovs-vsctrl show</code>检查br-ex和eth0的对应关系是否正常:
+<img src="http://7xsi10.com1.z0.glb.clouddn.com/2017-05-29%2023-39-59%E5%B1%8F%E5%B9%95%E6%88%AA%E5%9B%BE.png" alt=""></p>
+<h3>instance的网络配置</h3>
+<p>一个简单的网络拓扑图:
+<img src="http://7xsi10.com1.z0.glb.clouddn.com/2017-05-30%2009-46-59%E5%B1%8F%E5%B9%95%E6%88%AA%E5%9B%BE.png" alt=""></p>
+<p>public用于openstack主机外网访问，与openstack eth0网卡处于同一网段,这里(172.16.38),
+用于给实例分配floating IP，可以它的范围就是我们在local.conf里关于Neutron options的
+<code>Q_FLOATING_ALLOCATION_POOL=start=172.16.38.130,end=172.16.38.138</code>字段。</p>
+<p>然后private就是实例内部网络了，在创建实例的时候，分配网络就分配private network,可以看到它的范围就是字段<code>FIXED_RANGE=&quot;10.0.0.0/24&quot;</code></p>
+<p>路由器连接public 和 private
+<img src="http://7xsi10.com1.z0.glb.clouddn.com/2017-05-30%2009-48-40%E5%B1%8F%E5%B9%95%E6%88%AA%E5%9B%BE.png" alt=""></p>
+<h2>stack.sh那些事儿</h2>
+<h3>镜像源</h3>
+<p>网上的文章都将镜像源换成了<code>http://git.trystack.cn</code>
+即:</p>
+<pre class=><code>GIT_BASE=http://git.trystack.cn
+NOVNC_REPO=http://git.trystack.cn/kanaka/noVNC.git
+SPICE_REPO=http://git.trystack.cn/git/spice/spice-html5.git
+</code></pre>
+<p>但发现<code>http://git.trystack.cn/kanaka/noVNC.git</code>直接就是404,安装过程中也因为找不到镜像中断过，应该是镜像源出现问题了，于是我换成了github源。</p>
+<h3>djiango问题</h3>
+<p><img src="http://7xsi10.com1.z0.glb.clouddn.com/2017-05-29%2019-16-18%E5%B1%8F%E5%B9%95%E6%88%AA%E5%9B%BE.png" alt=""></p>
+<p>解决办法:</p>
+<p>先查看openstacksdk版本:</p>
+<pre class=><code>root@ubuntu:~# python
+Python 2.7.6 (default, Oct 26 2016, 20:30:19) 
+[GCC 4.8.4] on linux2
+Type &quot;help&quot;, &quot;copyright&quot;, &quot;credits&quot; or &quot;license&quot; for more information.
+&gt;&gt;&gt; import openstack
+&gt;&gt;&gt; import pbr.version
+&gt;&gt;&gt; print(pbr.version.VersionInfo('openstacksdk').version_string())
+0.8.1
+&gt;&gt;&gt; quit()
+</code></pre>
+<p>修改<code>/usr/local/lib/python2.7/dist-packages/openstack/session.py</code>里的<code>DEFAULT_USER_AGENT = &quot;openstacksdk/%s&quot; % openstack.__version__</code>为:
+<code>DEFAULT_USER_AGENT = &quot;openstacksdk/0.8.1&quot;</code>
+重新安装</p>
+<pre class=><code>./unstack.sh
+./clean.sh
+./stack.sh
+</code></pre>
+<h2>其他</h2>
+<h3>想重启服务?</h3>
+<p>当重启虚拟机后，发现宿主机和客户机互相都ping不通了，又是一个坑，因为eth0 桥接到br-ex 上面去了，而重启后br-ex 没有ip 配置，把eth0 从 br-ex 上去掉，或者手动通过ifconfig 给 br-ex 配置ip ，都可以解决问题。</p>
+<p>对于重启服务，之前的openstack是有<code>rejoin-stack.sh</code>方式的，但官方已经不推荐这种做法。</p>
+<p>所以我就直接针对于安装完毕的状态创建快照，下次直接恢复就是了(那么上面的网络问题也就不是问题了)。</p>
+<h3>安全访问控制</h3>
+<p>在配置安全访问的时候，如果直接使用default secure会导致openstack主机没法ping通实例floating IP,或者ssh连接，需要自定义规则:</p>
+<p><img src="http://7xsi10.com1.z0.glb.clouddn.com/2017-05-30%2009-47-36%E5%B1%8F%E5%B9%95%E6%88%AA%E5%9B%BE.png" alt=""></p>
+<h2>结语</h2>
+<p>这只是一个简单的开始，更多理论知识和实践，有待积累。</p>
+<p>最后进入我们创建的实例去看看吧。一个简单的私有云实例。
+<img src="http://7xsi10.com1.z0.glb.clouddn.com/2017-05-30%2009-49-18%E5%B1%8F%E5%B9%95%E6%88%AA%E5%9B%BE.png" alt=""></p>
+<p>最后，端午安康！</p>
+<p><img src="https://timgsa.baidu.com/timg?image&amp;quality=80&amp;size=b9999_10000&amp;sec=1496141480309&amp;di=bca5c982a951ff8a9fcf90b90ba30fe5&amp;imgtype=0&amp;src=http%3A%2F%2Fppt.downhot.com%2Fd%2Ffile%2Fp%2F2014%2F06%2F24%2F768749e5278c9f0cb2aabc3728f0e75a.jpg" alt=""></p>
+
+    </div>
+  </div>
+
+       
+        <div id="footer">
+            © 2017 <a href="#">laoqiren</a>
+            主题提供: <a href="https://github.com/laoqiren/yohe">Yohe</a>
+            Powered By <a href="https://github.com/laoqiren/yohe">Yohe</a>
+            图片存储: <a href="http://www.qiniu.com/">qiniu</a>
+        </div>
+    </div>
+
+    
+    <script>hljs.initHighlightingOnLoad();</script>

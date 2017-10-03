@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="/yohe_site/assets/css/layout.css">
+    
+  <link rel="stylesheet"
+  href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/railscasts.min.css">
+  <link rel="stylesheet" href="/yohe_site/assets/css/post.css"/>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+
+    <title>
+    My Blog
+</title>
+</head>
+<body>
+
+    <div id="container">
+        <div id="nav">
+            <div class="site-header-info">
+                <a href="/yohe_site/">
+                    <img src="https://avatars2.githubusercontent.com/u/16136702?v=4&s=120" width="100" height="100"/>
+                </a>
+                <h1 class="site-title">My Blog</h1>
+                <h2 class="site-description">爱技术，爱生活</h2>
+            </div>
+
+            
+  <div class="post-info">
+    <div class="site-published-separator"></div>
+    <h2 class="site-published">Published</h2>
+    <h2 class="site-publish-date">2017-07-16</h2>
+  </div>
+ 
+        </div>
+
+        
+  <div class="post-content">
+    <div class="post-header">
+      <h2 class="post-cate">in Nodejs</h2>
+      <h1>聊聊Agent/Proxy</h1>
+    </div>
+    <div class="post-content">
+        <p>聊聊Agent/Proxy，以Node为例，看看<code>ClientRequest</code>是如何通过<code>http.Agent</code>去管理socket池，用Node写http/https proxy,再自定义Agent并在Agent与目标源之间加入Node proxy。</p>
+<!--more-->
+<h2>http.Agent</h2>
+<p>首先<code>addRequest()</code>方法是入口，<code>http_client</code>发请求前会判断是否有agent,如果有，则会调用agent的<code>addRequest()</code>方法:</p>
+<pre class=js><code><span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.agent) {
+    <span class="hljs-keyword">if</span> (!<span class="hljs-keyword">this</span>.agent.keepAlive &amp;&amp; !<span class="hljs-built_in">Number</span>.isFinite(<span class="hljs-keyword">this</span>.agent.maxSockets)) {
+      <span class="hljs-keyword">this</span>._last = <span class="hljs-literal">true</span>;
+      <span class="hljs-keyword">this</span>.shouldKeepAlive = <span class="hljs-literal">false</span>;
+    } <span class="hljs-keyword">else</span> {
+      <span class="hljs-keyword">this</span>._last = <span class="hljs-literal">false</span>;
+      <span class="hljs-keyword">this</span>.shouldKeepAlive = <span class="hljs-literal">true</span>;
+    }
+    <span class="hljs-keyword">this</span>.agent.addRequest(<span class="hljs-keyword">this</span>, options);
+}
+</code></pre>
+<p>然后我们来看看官方的<code>http.Agent</code>做法:</p>
+<pre class=js><code><span class="hljs-keyword">var</span> name = <span class="hljs-keyword">this</span>.getName(options);
+<span class="hljs-keyword">if</span> (!<span class="hljs-keyword">this</span>.sockets[name]) {
+<span class="hljs-keyword">this</span>.sockets[name] = [];
+}
+
+<span class="hljs-keyword">var</span> freeLen = <span class="hljs-keyword">this</span>.freeSockets[name] ? <span class="hljs-keyword">this</span>.freeSockets[name].length : <span class="hljs-number">0</span>;
+<span class="hljs-keyword">var</span> sockLen = freeLen + <span class="hljs-keyword">this</span>.sockets[name].length;
+</code></pre>
+<p>我们看到<code>this.sockets[name]</code>表示了某个host请求正在处理请求的sockets数组，<code>this.freeSockets[name]</code>则表示某个host请求处于free状态下的sockets，两者数量之和的上限就是我们传给<code>new http.Agent()</code>构造函数options中的<code>maxSockets</code></p>
+<pre class=js><code><span class="hljs-keyword">if</span> (freeLen) {
+    <span class="hljs-keyword">var</span> socket = <span class="hljs-keyword">this</span>.freeSockets[name].shift();
+    socket._handle.asyncReset();
+    socket[async_id_symbol] = socket._handle.getAsyncId();
+
+    <span class="hljs-keyword">if</span> (!<span class="hljs-keyword">this</span>.freeSockets[name].length)
+      <span class="hljs-keyword">delete</span> <span class="hljs-keyword">this</span>.freeSockets[name];
+
+    <span class="hljs-keyword">this</span>.reuseSocket(socket, req);
+    req.onSocket(socket);
+    <span class="hljs-keyword">this</span>.sockets[name].push(socket);
+  } <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (sockLen &lt; <span class="hljs-keyword">this</span>.maxSockets) {
+    debug(<span class="hljs-string">'call onSocket'</span>, sockLen, freeLen);
+    <span class="hljs-keyword">this</span>.createSocket(req, options, handleSocketCreation(req, <span class="hljs-literal">true</span>));
+  } <span class="hljs-keyword">else</span> {
+    debug(<span class="hljs-string">'wait for socket'</span>);
+    <span class="hljs-keyword">if</span> (!<span class="hljs-keyword">this</span>.requests[name]) {
+      <span class="hljs-keyword">this</span>.requests[name] = [];
+    }
+    <span class="hljs-keyword">this</span>.requests[name].push(req);
+  }
+</code></pre>
+<p>如果该host的socket池里有空闲的，就从<code>freeSockets</code>里取出一个socket,重用并且将这个socket加入到正在处理请求的sockets里，即<code>sockets[name]</code>，如果没有空闲的socket，就准备创建新的socket了，但是首先sockets数不能超过<code>maxSockets</code>，如果超过了，就暂时没有socket用了，就加入到等待队列吧,即这里的<code>this.requests[name]</code>。</p>
+<p>接着我们看看socket是怎么被加入到<code>freeSockets</code>的:</p>
+<p>在<code>createSocket()</code>后，会对新的socket绑定一系列listener,其中包括了<code>onFree</code>:</p>
+<pre class=js><code><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">onFree</span>(<span class="hljs-params"></span>) </span>{
+    debug(<span class="hljs-string">'CLIENT socket onFree'</span>);
+    agent.emit(<span class="hljs-string">'free'</span>, s, options);
+  }
+s.on(<span class="hljs-string">'free'</span>, onFree);
+</code></pre>
+<p>socket所处理的request关闭后,就相当于free了，然后agent监听了free事件:</p>
+<pre class=js><code><span class="hljs-keyword">if</span> (socket.writable &amp;&amp;self.requests[name] &amp;&amp; self.requests[name].length) {
+      self.requests[name].shift().onSocket(socket);
+      ...
+}
+</code></pre>
+<p>free以后就去看还有没有处于等待队列的request,如果有就直接取出一个来复用这个socket</p>
+<p>如果没有，就尝试将其加入<code>freeSockets</code></p>
+<pre class=js><code><span class="hljs-keyword">if</span> (count &gt; self.maxSockets || freeLen &gt;= self.maxFreeSockets) {
+    socket.destroy();
+} <span class="hljs-keyword">else</span> {
+    <span class="hljs-comment">// add socket to freeSockets</span>
+}
+</code></pre>
+<p>当然需要设定agent的<code>keep-alive</code>为true</p>
+<p>当socket被close时，直接从socket池里删除，如果requests队列里还有等待的，就重新create一个socket。</p>
+<h2>proxy</h2>
+<p>proxy方式有许多，这里仅仅以http/https proxy为例，且用node实现。</p>
+<h3>盲中继</h3>
+<p>对于http网站，流量是可以通过proxy直接转发的，比如这里我实现的:</p>
+<pre class=js><code><span class="hljs-keyword">let</span> httpAgent = <span class="hljs-keyword">new</span> http.Agent({
+        <span class="hljs-attr">keepAlive</span>: <span class="hljs-literal">true</span>
+    })
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">request</span>(<span class="hljs-params">cReq, cRes</span>) </span>{
+    <span class="hljs-keyword">let</span> u = url.parse(cReq.url);
+    <span class="hljs-keyword">let</span> needAgent = <span class="hljs-literal">false</span>;
+
+    <span class="hljs-keyword">let</span> headers = <span class="hljs-built_in">Object</span>.assign({},cReq.headers,{
+        <span class="hljs-string">'x-forwarded-for'</span>: cReq.connection.remoteAddress
+    });
+    <span class="hljs-keyword">if</span>(headers[<span class="hljs-string">'proxy-connection'</span>]){
+        headers[<span class="hljs-string">'connection'</span>] = headers[<span class="hljs-string">'proxy-connection'</span>]
+        <span class="hljs-keyword">delete</span> headers[<span class="hljs-string">'proxy-connection'</span>];
+        <span class="hljs-keyword">if</span>(headers[<span class="hljs-string">'connection'</span>] === <span class="hljs-string">'keep-alive'</span>){
+            needAgent = <span class="hljs-literal">true</span>;
+        }
+    }
+    
+    <span class="hljs-keyword">let</span> options = {
+        <span class="hljs-attr">hostname</span> : u.hostname, 
+        <span class="hljs-attr">port</span>     : u.port || <span class="hljs-number">80</span>,
+        <span class="hljs-attr">path</span>     : u.path,       
+        <span class="hljs-attr">method</span>   : cReq.method,
+        headers,
+        <span class="hljs-attr">agent</span>: needAgent?httpAgent:<span class="hljs-literal">null</span>
+    };
+    <span class="hljs-keyword">let</span> pReq = http.request(options, pRes=&gt;{
+        cRes.writeHead(pRes.statusCode, pRes.headers);
+        pRes.pipe(cRes);
+    }).on(<span class="hljs-string">'error'</span>, e=&gt;{
+        cRes.end();
+    });
+
+    cReq.pipe(pReq);
+}
+</code></pre>
+<p>这里实现的中继并不是最傻的，加入了<code>x-forwarded-for</code>请求头，根据keep-alive设计原则，去除来自agent的请求头中的逐跳首部<code>proxy-connection</code>，如果发现agent想要和源网站建立keep-alive连接，这里就加入<code>http.Agent</code>来管理proxy与源之间的keep-alive连接。至于proxy和user-agent之间的keep-alive问题，正在思考解决中。</p>
+<h3>CONNECT隧道</h3>
+<p>想想agent与https网站的交流，由于证书机制，在它们中间加一个proxy会怎样，如果用上面那种方式去实现，则会存在一个问题，proxy服务器的证书没有加入agent的信任证书里，那么proxy与agent就建立不了连接。</p>
+<p>我们改用CONNECT方式，通过CONNECT方法建立隧道，来实现转发ssl流量:</p>
+<pre class=js><code><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">connect</span>(<span class="hljs-params">cReq, cSock</span>) </span>{
+    <span class="hljs-keyword">let</span> u = url.parse(<span class="hljs-string">'http://'</span> + cReq.url);
+    <span class="hljs-built_in">console</span>.log(cReq.url)
+    <span class="hljs-keyword">let</span> pSock = net.connect(u.port, u.hostname, ()=&gt;{
+        cSock.write(<span class="hljs-string">'HTTP/1.1 200 Connection Established\r\nProxy-agent: Node.js proxy server\r\n\r\n'</span>);
+        pSock.pipe(cSock);
+    }).on(<span class="hljs-string">'error'</span>, e=&gt;{
+        cSock.end();
+    });
+
+    cSock.pipe(pSock);
+}
+http.createServer()
+    .on(<span class="hljs-string">'request'</span>, request)
+    .on(<span class="hljs-string">'connect'</span>, connect)
+    .listen(<span class="hljs-number">8888</span>,()=&gt;{
+        <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'the proxy server has been listend at port 8888'</span>)
+    });
+</code></pre>
+<p>抓包看看:
+<img src="http://7xsi10.com1.z0.glb.clouddn.com/blog-http-connect.png" alt="http://7xsi10.com1.z0.glb.clouddn.com/blog-http-connect.png"></p>
+<p>可以看到，这种方式下，agent与proxy之间的流量是明文的，这就会导致一个问题，我试着将服务放到国外vps作为梯子，不访问黑名单网站还好，一访问就被GWF发现，proxy就挂了。那么我们可以在agent与proxy之间加层ssl啊。</p>
+<pre class=js><code>https.createServer({
+    <span class="hljs-attr">key</span>: fs.readFileSync(__dirname + <span class="hljs-string">'/server/server.key'</span>),
+    <span class="hljs-attr">cert</span>: fs.readFileSync(__dirname + <span class="hljs-string">'/server/server.crt'</span>)
+})
+    .on(<span class="hljs-string">'request'</span>, request)
+    .on(<span class="hljs-string">'connect'</span>, connect)
+    .listen(<span class="hljs-number">8888</span>,()=&gt;{
+        <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'the proxy server has been listend at port 8888'</span>)
+    });
+</code></pre>
+<p>最终测试是没问题的:
+<img src="http://7xsi10.com1.z0.glb.clouddn.com/node-https-proxy.png" alt="http://7xsi10.com1.z0.glb.clouddn.com/node-https-proxy.png"></p>
+<h2>加入了proxy的agent</h2>
+<p>通过自定义agent，并实现<code>addRequest()</code>方法，有时候的需求是给Agent加上proxy,这个时候就需要在自定义的agent里进行模拟browser行为与proxy进行交流了。</p>
+<h3>http-proxy-agent</h3>
+<p>这种agent只适用于源网站为http的，这种网站可以直接走盲中继</p>
+<p>它的实现方式很简单，直接使用<code>net</code>或<code>tls</code>建立socket,然后与proxy进行交流:</p>
+<pre class=js><code><span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.secureProxy) {
+    socket = tls.connect(proxy);
+  } <span class="hljs-keyword">else</span> {
+    socket = net.connect(proxy);
+  }
+</code></pre>
+<p>这个模块它是直接放弃<code>keep-alive</code>行为的，即没有发送<code>'proxy-connection':'keep-alive'</code>,粗暴处理</p>
+<h3>https-proxy-agent</h3>
+<p>该模块为了转发ssl流量，做法就是上面<code>proxy</code>小节提到的CONNECT方式：</p>
+<pre class=js><code><span class="hljs-keyword">var</span> hostname = opts.host + <span class="hljs-string">':'</span> + opts.port;
+  <span class="hljs-keyword">var</span> msg = <span class="hljs-string">'CONNECT '</span> + hostname + <span class="hljs-string">' HTTP/1.1\r\n'</span>;
+
+  <span class="hljs-keyword">var</span> headers = <span class="hljs-built_in">Object</span>.assign({}, proxy.headers);
+  <span class="hljs-keyword">if</span> (proxy.auth) {
+    headers[<span class="hljs-string">'Proxy-Authorization'</span>] =
+      <span class="hljs-string">'Basic '</span> + <span class="hljs-keyword">new</span> Buffer(proxy.auth).toString(<span class="hljs-string">'base64'</span>);
+  }
+
+  <span class="hljs-keyword">var</span> host = opts.host;
+  <span class="hljs-keyword">if</span> (!isDefaultPort(opts.port, opts.secureEndpoint)) {
+    host += <span class="hljs-string">':'</span> + opts.port;
+  }
+  headers[<span class="hljs-string">'Host'</span>] = host;
+
+  headers[<span class="hljs-string">'Connection'</span>] = <span class="hljs-string">'close'</span>;
+  <span class="hljs-built_in">Object</span>.keys(headers).forEach(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">name</span>) </span>{
+    msg += name + <span class="hljs-string">': '</span> + headers[name] + <span class="hljs-string">'\r\n'</span>;
+  });
+
+  socket.write(msg + <span class="hljs-string">'\r\n'</span>);
+</code></pre>
+<p>相当于就是模拟了browser的行为，向proxy发送CONNECT请求来建立隧道。</p>
+<h3>其他proxy</h3>
+<p>如socks之类的，篇幅有限，这里就不解释了。</p>
+
+    </div>
+  </div>
+
+       
+        <div id="footer">
+            © 2017 <a href="#">laoqiren</a>
+            主题提供: <a href="https://github.com/laoqiren/yohe">Yohe</a>
+            Powered By <a href="https://github.com/laoqiren/yohe">Yohe</a>
+            图片存储: <a href="http://www.qiniu.com/">qiniu</a>
+        </div>
+    </div>
+
+    
+    <script>hljs.initHighlightingOnLoad();</script>

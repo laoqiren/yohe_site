@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="/yohe_site/assets/css/layout.css">
+    
+  <link rel="stylesheet"
+  href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/railscasts.min.css">
+  <link rel="stylesheet" href="/yohe_site/assets/css/post.css"/>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+
+    <title>
+    My Blog
+</title>
+</head>
+<body>
+
+    <div id="container">
+        <div id="nav">
+            <div class="site-header-info">
+                <a href="/yohe_site/">
+                    <img src="https://avatars2.githubusercontent.com/u/16136702?v=4&s=120" width="100" height="100"/>
+                </a>
+                <h1 class="site-title">My Blog</h1>
+                <h2 class="site-description">爱技术，爱生活</h2>
+            </div>
+
+            
+  <div class="post-info">
+    <div class="site-published-separator"></div>
+    <h2 class="site-published">Published</h2>
+    <h2 class="site-publish-date">2016-08-22</h2>
+  </div>
+ 
+        </div>
+
+        
+  <div class="post-content">
+    <div class="post-header">
+      <h2 class="post-cate">in HTML5</h2>
+      <h1>'二进制数据处理问题'</h1>
+    </div>
+    <div class="post-content">
+        <p>二进制数据的处理在开发中是非常普遍和重要的，文件I/O,网络I/O，HTML5 Canvas/WebGL,音频数据的处理等等，这些不管是从性能上考虑，还是对数据的精确处理上来考虑，二进制数据接口都是非常重要的。</p>
+<p>ArrayBuffer是Js操作二进制数据的接口，到后来加入到了es6的标准，Blob对象存储原始数据，相当于是ArrayBuffer数据的超集，XHR二级提供了FormData来完成表单数据提交，并且还支持Blob对象的上传，我们可以用以文件上传，而Nodejs的Buffer作为js和C++结合模块，相当于对ArrayBuffer的封装以更加方便的进行二进制数据的操作。</p>
+<p>本文就一些遇到的问题进行总结。将会涉及上述相关知识</p>
+<p><strong>文章目录</strong></p>
+<ol>
+<li>字节序问题</li>
+<li>编码问题</li>
+<li>客户端发送FormData（文件上传）</li>
+<li>node向客户端发送ArrayBuffer</li>
+<li>综合实例</li>
+<li>性能测试</li>
+</ol>
+<!--more-->
+<h3>字节序问题</h3>
+<p>字节序指数据在内存中的储存方式，分为小端字节序和大端字节序，小端字节序：相对重要的字节排在后面的内存地址，相对不重要字节排在前面的内存地址。大端字节序相反。</p>
+<p>举个栗子：
+开辟内存空间储存二进制数据，并写入32位整数：</p>
+<pre class=js><code><span class="hljs-keyword">var</span> buffer = <span class="hljs-keyword">new</span> <span class="hljs-built_in">ArrayBuffer</span>(<span class="hljs-number">16</span>);
+<span class="hljs-keyword">var</span> int32View = <span class="hljs-keyword">new</span> <span class="hljs-built_in">Int32Array</span>(buffer);
+<span class="hljs-keyword">for</span>(<span class="hljs-keyword">let</span> i=<span class="hljs-number">0</span>; i&lt;int32View.length; i++){
+	int32View[i] = i * <span class="hljs-number">2</span>;
+}
+<span class="hljs-comment">/*
+0
+2
+4
+6
+*/</span>
+</code></pre>
+<p>上面代码建立的32位整数视图，每个元素占4个字节，而用于储存的内存空间为16个字节，可以存4个元素。每个元素在内存当中是怎么储存的呢？</p>
+<p>我们这时候再在这片内存上建立8位整数的视图，看看每一个元素是怎样的？</p>
+<pre class=js><code><span class="hljs-keyword">var</span> int8View = <span class="hljs-keyword">new</span> <span class="hljs-built_in">Int8Array</span>(buffer);
+<span class="hljs-keyword">for</span>(<span class="hljs-keyword">let</span> element <span class="hljs-keyword">of</span> int8View){
+	<span class="hljs-built_in">console</span>.log(element);
+}
+
+<span class="hljs-comment">/*
+0
+0
+0
+0
+2
+0
+0
+0
+4
+0
+0
+0
+6
+0
+0
+0
+*/</span>
+</code></pre>
+<p>可以看到在32位整数视图存的数字，对数值大小决定性更大的处于后面了。</p>
+<p>记住这里是以字节为单位的，并不是每个位都会发生颠倒，而是字节的顺序。以第二个元素2为例，其在内存中的存在方式：</p>
+<pre class=><code>00000010 00000000 00000000 00000000
+</code></pre>
+<p>TypedArray视图只能以小端字节序处理数据，当我们需要大端字节序呢？</p>
+<p>DataView复合视图。其get和set方法都提供第二个参数设置，默认情况下，DataView的get方法使用大端字节序解读数据，如果需要使用小端字节序解读，必须在get方法的第二个参数指定true。</p>
+<h3>编码问题</h3>
+<p>看个例子：</p>
+<p>我们在服务器上新建一个文本文件hello.txt:</p>
+<pre class=><code>你好啊，欢迎来到罗峡的技术博客
+</code></pre>
+<p>然后我们创建可读流读取：</p>
+<pre class=js><code><span class="hljs-keyword">var</span> fs = <span class="hljs-built_in">require</span>(<span class="hljs-string">'fs'</span>);
+<span class="hljs-keyword">var</span> result = <span class="hljs-string">''</span>;
+<span class="hljs-keyword">var</span> rs = fs.createReadStream(<span class="hljs-string">'./hello.txt'</span>,{<span class="hljs-attr">highWaterMark</span>:<span class="hljs-number">11</span>});
+rs.on(<span class="hljs-string">'data'</span>,<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">chunk</span>)</span>{
+    result += chunk;
+});
+rs.on(<span class="hljs-string">'end'</span>,<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>)</span>{
+    <span class="hljs-built_in">console</span>.log(result);
+});
+</code></pre>
+<p>结果：</p>
+<pre class=><code>你好啊���欢迎来���罗峡的技术博���
+</code></pre>
+<p>好气有木有，怎么会乱码呢？</p>
+<p><strong>乱码的产生</strong>
+问题就在<strong>highWaterMark:11</strong>,我们设定了buffer的长度为11,我们在创建可读流的时候，默认以utf-8编码，而在utf-8下，中文字符占3个字节，整个文本的二进制储存如下：</p>
+<pre class=><code>&lt;Buffer e4 bd a0 e5 a5 bd e5 95 8a ef bf bd ef bf bd ef bf bd e6 ac a2 e8 bf 8e e6 9d a5 ef bf bd ef bf bd ef bf bd e7 bd 97 e5 b3 a1 e7 9a 84 e6 8a 80 e6 9c...&gt;
+</code></pre>
+<p>每个16进制数据代表一个字节，三个才表示了一个字符，而我们设置了buffer长度为11个字节，表示三个字符后，剩余两个字节，和第二个buffer的前1个字节都不能正确解析，就乱码了。我们可以看到有3个乱码正是3个字节。</p>
+<p><strong>setEncoding('utf-8')的作用：</strong></p>
+<p>这时候data事件的chunk不再是buffer，而是经过编码后的字符串，可读流在内部设置了decoder对象，每次data事件，通过该对象进行解码，这个对象知道宽字符在UTF-8下是3个字节方式储存的，所以每次就会根据buffer大小来读取最大的3的整数个 字节，剩余的2个字节留下来和第二段buffer的第一个字节一起读。</p>
+<p><strong>正确拼接buffer</strong>
+虽然setEncoding能够解决大部分问题，但是对一些编码是不支持的，我们需要正确的拼接buffer:</p>
+<pre class=js><code><span class="hljs-keyword">var</span> chunks = [];
+res.on(<span class="hljs-string">'data'</span>,<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">chunk</span>)</span>{
+	chunks.push(chunk);
+});
+res.on(<span class="hljs-string">'end'</span>,<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>)</span>{
+	<span class="hljs-keyword">var</span> buf = Buffer.concat(chunks);
+});
+</code></pre>
+<h3>客户端向node发送FormData</h3>
+<p>FormData是HTML5 XHR2级新增的类型，用于表单数据上传。其作用其实与Jquery的serialize()方法，这个方法将传入的表达序列化为查询字符串的格式:</p>
+<pre class=><code>userid=123&amp;username=xx
+</code></pre>
+<p>而FormData的好处是可以发送blob对象,file类型的input得到的文件就继承于blob,所以FormData可用于文件上传。</p>
+<p>举个栗子：</p>
+<p>客户端index.html:</p>
+<pre class=html><code><span class="hljs-tag">&lt;<span class="hljs-name">form</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"myform"</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">label</span> <span class="hljs-attr">for</span>=<span class="hljs-string">'name'</span>&gt;</span>用户名:<span class="hljs-tag">&lt;<span class="hljs-name">input</span> <span class="hljs-attr">type</span>=<span class="hljs-string">text</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"name"</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"name"</span>/&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">label</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">label</span> <span class="hljs-attr">for</span>=<span class="hljs-string">"password"</span>&gt;</span>密码:<span class="hljs-tag">&lt;<span class="hljs-name">input</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"password"</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"password"</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"password"</span>/&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">label</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">label</span> <span class="hljs-attr">for</span>=<span class="hljs-string">'file'</span>&gt;</span>文件<span class="hljs-tag">&lt;<span class="hljs-name">input</span> <span class="hljs-attr">type</span>=<span class="hljs-string">file</span> <span class="hljs-attr">id</span>=<span class="hljs-string">'file'</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"file"</span> <span class="hljs-attr">required</span>/&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">label</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">input</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"button"</span> <span class="hljs-attr">value</span>=<span class="hljs-string">"提交"</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"sub"</span>/&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">form</span>&gt;</span>
+</code></pre>
+<p>表单元素的name属性将作为键值对的键名。</p>
+<p>客户端client.js:</p>
+<pre class=js><code><span class="hljs-built_in">window</span>.onload = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>)</span>{
+    <span class="hljs-built_in">document</span>.getElementById(<span class="hljs-string">"sub"</span>).addEventListener(<span class="hljs-string">"click"</span>,<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">e</span>)</span>{
+        <span class="hljs-keyword">var</span> myFormData = <span class="hljs-keyword">new</span> FormData(<span class="hljs-built_in">document</span>.getElementById(<span class="hljs-string">"myform"</span>));
+        <span class="hljs-keyword">var</span> xhr = <span class="hljs-keyword">new</span> XMLHttpRequest();
+        xhr.open(<span class="hljs-string">"post"</span>,<span class="hljs-string">"http://localhost:8008/"</span>);
+        xhr.onload = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">e</span>)</span>{
+            <span class="hljs-keyword">if</span>(xhr.status === <span class="hljs-number">200</span>){
+                <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'succuess'</span>);
+            }
+        }
+    },<span class="hljs-literal">false</span>);
+}
+</code></pre>
+<p>我们来查看network:
+<img src="http://7xsi10.com1.z0.glb.clouddn.com/requestheder.png" alt="requestHeader"></p>
+<p>我们在node端通过multiparty模块出来FormData数据：</p>
+<pre class=js><code><span class="hljs-keyword">let</span> http = <span class="hljs-built_in">require</span>(<span class="hljs-string">'http'</span>);
+<span class="hljs-keyword">var</span> urlLib = <span class="hljs-built_in">require</span>(<span class="hljs-string">'url'</span>);
+<span class="hljs-keyword">var</span> multiparty = <span class="hljs-built_in">require</span>(<span class="hljs-string">'multiparty'</span>);
+http.createServer(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">req,res</span>)</span>{
+    <span class="hljs-keyword">var</span> parms = urlLib.parse(req.url,<span class="hljs-literal">true</span>);
+    <span class="hljs-keyword">if</span>(parms.pathname === <span class="hljs-string">'/'</span>){
+        <span class="hljs-keyword">var</span> form = <span class="hljs-keyword">new</span> multiparty.Form();
+        form.parse(req,<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">err,fields,files</span>)</span>{
+			<span class="hljs-built_in">console</span>.log(<span class="hljs-string">'fileds:'</span> +fields + <span class="hljs-string">'files'</span> + files);
+			<span class="hljs-comment">//...</span>
+	}
+});
+<span class="hljs-comment">//...</span>
+</code></pre>
+<p>我们得到的打印结果：</p>
+<pre class=js><code>server has been listened on <span class="hljs-number">8008</span>
+{ <span class="hljs-attr">name</span>: [ <span class="hljs-string">'罗峡'</span> ], <span class="hljs-attr">password</span>: [ <span class="hljs-string">'hello'</span> ] } { <span class="hljs-attr">file</span>:
+   [ { <span class="hljs-attr">fieldName</span>: <span class="hljs-string">'file'</span>,
+       <span class="hljs-attr">originalFilename</span>: <span class="hljs-string">''</span>,
+       <span class="hljs-attr">path</span>: <span class="hljs-string">'C:\\Users\\ADMINI~1\\AppData\\Local\\Temp\\XJhnYHS1XylGbr2NQCYXBvLC'</span>,
+       <span class="hljs-attr">headers</span>: [<span class="hljs-built_in">Object</span>],
+       <span class="hljs-attr">size</span>: <span class="hljs-number">0</span> } ] }
+</code></pre>
+<p>我们可以通过<strong>files.file[0].path</strong>获取第一个文件的文件路径。</p>
+<h3>node端发送ArrayBuffer给客户端</h3>
+<p>xhr2为ajax请求对象提供了response属性和responseType属性，前者根据后者的设置对服务端发送过来的数据进行解析。</p>
+<p>比如我设置responseType为ArrayBuffer,response就返回ArrayBuffer,但是有一点需要注意的是，我们要保证服务端返回的数据是能够被解析成ArrayBuffer的。</p>
+<p>客户端client.js:</p>
+<pre class=js><code><span class="hljs-keyword">var</span> xhr = <span class="hljs-keyword">new</span> XMLHttpRequest();
+xhr.responseType = <span class="hljs-string">"arraybuffer"</span>;
+xhr.open(<span class="hljs-string">"get"</span>,<span class="hljs-string">"http://localhost:8008/"</span>);
+xhr.onload = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">e</span>)</span>{
+    <span class="hljs-keyword">if</span>(xhr.status === <span class="hljs-number">200</span>){
+        <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'succuess'</span>);
+		<span class="hljs-keyword">var</span> buffer = xhr.response;
+        <span class="hljs-keyword">var</span> int8View = <span class="hljs-keyword">new</span> <span class="hljs-built_in">Int8Array</span>(buffer);
+        <span class="hljs-keyword">for</span>(<span class="hljs-keyword">let</span> element <span class="hljs-keyword">of</span> int8View){
+            <span class="hljs-built_in">console</span>.log(element);
+        }
+    }
+}
+xhr.send(<span class="hljs-literal">null</span>);
+</code></pre>
+<p>node server.js:</p>
+<pre class=js><code>res.writeHead(<span class="hljs-number">200</span>,{<span class="hljs-string">'Access-Control-Allow-Origin'</span>:<span class="hljs-string">'*'</span>,<span class="hljs-string">'Access-Control-Allow-Method'</span>:<span class="hljs-string">'GET,POST'</span>,<span class="hljs-string">'Content-Type'</span>:<span class="hljs-string">'application/octet-stream'</span>});
+<span class="hljs-keyword">var</span> typedView = <span class="hljs-keyword">new</span> <span class="hljs-built_in">Int16Array</span>([<span class="hljs-number">1</span>,<span class="hljs-number">6</span>,<span class="hljs-number">8</span>]);
+res.write(<span class="hljs-keyword">new</span> Buffer(typedView));
+res.end();
+</code></pre>
+<p>这里要注意的是，需要设定'Content-type'为二进制文件，之前我没设置，以及后来我先写入数据再才设置这个响应头，客户端会一直报错：</p>
+<pre class=js><code>GET http:<span class="hljs-comment">//localhost:8008/ net::ERR_INVALID_CHUNKED_ENCODING</span>
+</code></pre>
+<p>这都是因为没有设置文件类型响应头的结果。</p>
+<h3>综合实例</h3>
+<p>这个综合实例，我们先从客户端上传图片文件，然后服务端将图片的二进制数据发送给客户端，客户端再生成图片链接，客户端将图片文件显示出来。</p>
+<p>生成的图片url可由两种方式，一种是blob形式和base64形式。</p>
+<p>客户端index.html:</p>
+<pre class=html><code><span class="hljs-tag">&lt;<span class="hljs-name">form</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"myform"</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">label</span> <span class="hljs-attr">for</span>=<span class="hljs-string">'name'</span>&gt;</span>用户名:<span class="hljs-tag">&lt;<span class="hljs-name">input</span> <span class="hljs-attr">type</span>=<span class="hljs-string">text</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"name"</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"name"</span>/&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">label</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">label</span> <span class="hljs-attr">for</span>=<span class="hljs-string">"password"</span>&gt;</span>密码:<span class="hljs-tag">&lt;<span class="hljs-name">input</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"password"</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"password"</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"password"</span>/&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">label</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">label</span> <span class="hljs-attr">for</span>=<span class="hljs-string">'file'</span>&gt;</span>文件<span class="hljs-tag">&lt;<span class="hljs-name">input</span> <span class="hljs-attr">type</span>=<span class="hljs-string">file</span> <span class="hljs-attr">id</span>=<span class="hljs-string">'file'</span> <span class="hljs-attr">name</span>=<span class="hljs-string">"file"</span> <span class="hljs-attr">required</span>/&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">label</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">input</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"button"</span> <span class="hljs-attr">value</span>=<span class="hljs-string">"提交"</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"sub"</span>/&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">form</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">div</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"result"</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">div</span>&gt;</span>
+</code></pre>
+<p>客户端client.js:</p>
+<pre class=js><code><span class="hljs-built_in">window</span>.onload = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>)</span>{
+    <span class="hljs-keyword">var</span> resultBox = <span class="hljs-built_in">document</span>.getElementById(<span class="hljs-string">'result'</span>)
+    <span class="hljs-built_in">document</span>.getElementById(<span class="hljs-string">"sub"</span>).addEventListener(<span class="hljs-string">"click"</span>,<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">e</span>)</span>{
+        <span class="hljs-keyword">var</span> myFormData = <span class="hljs-keyword">new</span> FormData(<span class="hljs-built_in">document</span>.getElementById(<span class="hljs-string">"myform"</span>));
+        <span class="hljs-keyword">var</span> xhr = <span class="hljs-keyword">new</span> XMLHttpRequest();
+        xhr.responseType = <span class="hljs-string">"arraybuffer"</span>;
+        xhr.open(<span class="hljs-string">"post"</span>,<span class="hljs-string">"http://localhost:8008/"</span>);
+        xhr.onload = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">e</span>)</span>{
+            <span class="hljs-keyword">if</span>(xhr.status === <span class="hljs-number">200</span>){
+                <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'succuess'</span>);
+				<span class="hljs-keyword">var</span> bb = <span class="hljs-keyword">new</span> Blob([xhr.response]);
+                resultBox.innerHTML = <span class="hljs-string">'&lt;img src="'</span> + <span class="hljs-built_in">window</span>.URL.createObjectURL(bb) +<span class="hljs-string">'"/&gt;'</span>
+            }
+        }
+        xhr.send(myFormData);
+    },<span class="hljs-literal">false</span>);
+}
+</code></pre>
+<p>服务端server.js:</p>
+<pre class=js><code><span class="hljs-keyword">let</span> http = <span class="hljs-built_in">require</span>(<span class="hljs-string">'http'</span>);
+<span class="hljs-keyword">var</span> urlLib = <span class="hljs-built_in">require</span>(<span class="hljs-string">'url'</span>);
+<span class="hljs-keyword">var</span> fs = <span class="hljs-built_in">require</span>(<span class="hljs-string">'fs'</span>);
+<span class="hljs-keyword">var</span> multiparty = <span class="hljs-built_in">require</span>(<span class="hljs-string">'multiparty'</span>);
+<span class="hljs-keyword">var</span> bufs = [];
+<span class="hljs-keyword">var</span> img;
+http.createServer(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">req,res</span>)</span>{
+    <span class="hljs-keyword">var</span> parms = urlLib.parse(req.url,<span class="hljs-literal">true</span>);
+    <span class="hljs-keyword">if</span>(parms.pathname === <span class="hljs-string">'/'</span>){ 
+        <span class="hljs-keyword">var</span> form = <span class="hljs-keyword">new</span> multiparty.Form();
+        form.parse(req,<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">err,fields,files</span>)</span>{
+            <span class="hljs-keyword">var</span> readStream = fs.createReadStream(files.file[<span class="hljs-number">0</span>].path);
+            readStream.on(<span class="hljs-string">'data'</span>,<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">chunk</span>)</span>{
+                bufs.push(chunk);
+            });
+            readStream.on(<span class="hljs-string">'end'</span>,<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>)</span>{
+                img = Buffer.concat(bufs);
+                res.writeHead(<span class="hljs-number">200</span>,{<span class="hljs-string">'Access-Control-Allow-Origin'</span>:<span class="hljs-string">'*'</span>,<span class="hljs-string">'Access-Control-Allow-Method'</span>:<span class="hljs-string">'GET,POST'</span>,<span class="hljs-string">'Content-Type'</span>:<span class="hljs-string">'application/octet-stream'</span>});
+                res.write(img);
+                res.end();
+				bufs = [];
+            })
+        });
+    }
+}).listen(<span class="hljs-number">8008</span>);
+<span class="hljs-built_in">console</span>.log(<span class="hljs-string">'server has been listened on 8008'</span>);
+</code></pre>
+<p>我们查看结果:
+<img src="http://7xsi10.com1.z0.glb.clouddn.com/resultP.png" alt="result">
+注意，上面的write一定要在数据读取完毕即readStream的end事件触发后才进行，不然会使得buffer为undefined.</p>
+<p>我们查看上面的图片URL地址：
+<img src="http://7xsi10.com1.z0.glb.clouddn.com/blob.png" alt="blob">
+发现是blob形式的，原因是我们通过**window.URL.createObjectURL(bb) **创建的 ，那如果我们想生存base64格式的url呢？</p>
+<p>Just：</p>
+<pre class=js><code><span class="hljs-keyword">var</span> myBlob = <span class="hljs-keyword">new</span> Blob([xhr.response]);
+<span class="hljs-keyword">var</span> reader = <span class="hljs-keyword">new</span> FileReader();
+reader.readAsDataURL(myBlob);
+reader.onload = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>)</span>{
+    resultBox.innerHTML = <span class="hljs-string">'&lt;img src="'</span> + <span class="hljs-keyword">this</span>.result +<span class="hljs-string">'"/&gt;'</span>
+};
+</code></pre>
+<p>结果：
+<img src="http://7xsi10.com1.z0.glb.clouddn.com/base64.png" alt="base64"></p>
+<h3>性能</h3>
+<p>前面说过二进制数据操作对开发非常重要，最求更高的性能和数据的精确操作都离不开二进制操作，我们以网络I/O为例，看看非二进制操作和二进制操作的对比。</p>
+<p>server.js:</p>
+<pre class=js><code><span class="hljs-keyword">var</span> http = <span class="hljs-built_in">require</span>(<span class="hljs-string">'http'</span>);
+<span class="hljs-keyword">var</span> hello = <span class="hljs-string">''</span>;
+<span class="hljs-keyword">for</span>(<span class="hljs-keyword">var</span> i=<span class="hljs-number">0</span>; i&lt;<span class="hljs-number">1000</span>; i++){
+	hello += <span class="hljs-string">'h'</span>;
+}
+http.createServer(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">req,res</span>)</span>{
+	res.writeHead(<span class="hljs-number">200</span>);
+	res.end(hello);
+}).listen(<span class="hljs-number">8008</span>);
+</code></pre>
+<p>然后我们通过Apache提供的ab工具，进行性能测试：</p>
+<pre class=><code>ab -c 200 http://localhost:8008
+</code></pre>
+<p>-c表示并发数，我们发起一次并发数为200的请求，看看结果：
+<img src="http://7xsi10.com1.z0.glb.clouddn.com/slowR.png" alt="slow"></p>
+<p>然后我们在通过buffer形式进行传输：</p>
+<pre class=js><code><span class="hljs-keyword">var</span> http = <span class="hljs-built_in">require</span>(<span class="hljs-string">'http'</span>);
+<span class="hljs-keyword">var</span> hello = <span class="hljs-string">''</span>;
+<span class="hljs-keyword">for</span>(<span class="hljs-keyword">var</span> i=<span class="hljs-number">0</span>; i&lt;<span class="hljs-number">1000</span>; i++){
+	hello += <span class="hljs-string">'h'</span>;
+}
+<span class="hljs-keyword">var</span> buf = <span class="hljs-keyword">new</span> Buffer(hello);
+http.createServer(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">req,res</span>)</span>{
+	res.writeHead(<span class="hljs-number">200</span>);
+	res.end(buf);
+}).listen(<span class="hljs-number">8008</span>);
+</code></pre>
+<p>再看看结果:
+<img src="http://7xsi10.com1.z0.glb.clouddn.com/fastR.png" alt="fast"></p>
+<p>可见通过二进制数据传输传输速率快得多，耗时较少。</p>
+<p><strong>之后会基于二进制数据操作对canvas图形图像处理，音乐可视化等等内容进行总结。敬请期待</strong></p>
+<p><strong>我们可以看到，前端知识体系是如此庞大，每个知识点都有许多内容，要hold住实属不易，但是我想只要我们有兴趣，有一颗最求卓越的心，我们就能做到最好的自己的。</strong></p>
+<p><strong>里约奥运已经在今天落幕，感谢运动员们带给我们的难忘时刻，最让我难忘的是中国女排姑娘们，永不放弃，顽强拼搏的精神，在coding过程中，我们也要发扬这种精神，不是吗？</strong></p>
+
+    </div>
+  </div>
+
+       
+        <div id="footer">
+            © 2017 <a href="#">laoqiren</a>
+            主题提供: <a href="https://github.com/laoqiren/yohe">Yohe</a>
+            Powered By <a href="https://github.com/laoqiren/yohe">Yohe</a>
+            图片存储: <a href="http://www.qiniu.com/">qiniu</a>
+        </div>
+    </div>
+
+    
+    <script>hljs.initHighlightingOnLoad();</script>

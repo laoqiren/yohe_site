@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="/yohe_site/assets/css/layout.css">
+    
+  <link rel="stylesheet"
+  href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/railscasts.min.css">
+  <link rel="stylesheet" href="/yohe_site/assets/css/post.css"/>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+
+    <title>
+    My Blog
+</title>
+</head>
+<body>
+
+    <div id="container">
+        <div id="nav">
+            <div class="site-header-info">
+                <a href="/yohe_site/">
+                    <img src="https://avatars2.githubusercontent.com/u/16136702?v=4&s=120" width="100" height="100"/>
+                </a>
+                <h1 class="site-title">My Blog</h1>
+                <h2 class="site-description">爱技术，爱生活</h2>
+            </div>
+
+            
+  <div class="post-info">
+    <div class="site-published-separator"></div>
+    <h2 class="site-published">Published</h2>
+    <h2 class="site-publish-date">2016-06-01</h2>
+  </div>
+ 
+        </div>
+
+        
+  <div class="post-content">
+    <div class="post-header">
+      <h2 class="post-cate">in Nodejs</h2>
+      <h1>基于socket.io的聊天应用</h1>
+    </div>
+    <div class="post-content">
+        <p>WebSocket是HTML5的一种新通信协议，它实现了浏览器与服务器之间的双向通讯。而Socket.IO是一个完全由JavaScript实现、基于Node.js、支持WebSocket的协议用于实时通信、跨平台的开源框架，它包括了客户端的JavaScript和服务器端的Node.js。</p>
+<p>本文记录利用socket.io开发聊天室的实践
+<img src="http://7xsi10.com1.z0.glb.clouddn.com/user1.png" alt="user1"></p>
+<!--more-->
+<h5>Socket.IO除了支持WebSocket通讯协议外，还支持许多种轮询（Polling）机制以及其它实时通信方式，并封装成了通用的接口，并且在服务端实现了这些实时机制的相应代码。Socket.IO实现的Polling通信机制包括Adobe Flash Socket、AJAX长轮询、AJAX multipart streaming、持久Iframe、JSONP轮询等。Socket.IO能够根据浏览器对通讯机制的支持情况自动地选择最佳的方式来实现网络实时应用。</h5>
+<h4>a. 需要依赖的模块</h4>
+<ol>
+<li>客户端jquery</li>
+<li>express</li>
+<li>express的静态文件服务</li>
+<li>http模块</li>
+<li>socket.io</li>
+</ol>
+<h5>Nodejs服务端server.js:</h5>
+<pre class=js><code><span class="hljs-keyword">var</span> app = <span class="hljs-built_in">require</span>(<span class="hljs-string">'express'</span>)();
+<span class="hljs-keyword">var</span> http = <span class="hljs-built_in">require</span>(<span class="hljs-string">'http'</span>).Server(app);
+<span class="hljs-keyword">var</span> io = <span class="hljs-built_in">require</span>(<span class="hljs-string">'socket.io'</span>)(http);
+<span class="hljs-keyword">var</span> staticServer = <span class="hljs-built_in">require</span>(<span class="hljs-string">'express-static'</span>);
+</code></pre>
+<h5>客户端引入socket.io包的soket.io.js</h5>
+<pre class=html><code><span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"text/javascript"</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"./socket.io.js"</span>&gt;</span><span class="undefined"></span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
+</code></pre>
+<h4>b. 客户端 index.html</h4>
+<h5>界面以清新简约为主，此处省略样式代码，最终界面效果如下：</h5>
+<p><img src="http://7xsi10.com1.z0.glb.clouddn.com/chatUI.png" alt="UI"></p>
+<h5>来看几个客户端socket.io的API:</h5>
+<ol>
+<li>io(String url,Obj opts) 暴露于window下，可传入建立连接的url字符串和用于设置连接的对象，如果不设置url,则默认建立到位客户端提供服务的服务器根目录</li>
+<li>emmit()事件机制，触发某个事件</li>
+</ol>
+<h5>index.html:</h5>
+<ol>
+<li>建立连接:</li>
+</ol>
+<pre class=js><code><span class="hljs-keyword">var</span> socket = io();
+</code></pre>
+<ol start="2">
+<li>触发服务端用户加入事件join:</li>
+</ol>
+<pre class=js><code>socket.emit(<span class="hljs-string">'join'</span>,name);
+</code></pre>
+<ol start="3">
+<li>消息发送，触发服务端消息发送事件text:</li>
+</ol>
+<pre class=js><code>socket.emit(<span class="hljs-string">'text'</span>,$(<span class="hljs-string">'#msg'</span>).val());
+</code></pre>
+<ol start="4">
+<li>监听由服务器当其他用户加入时触发的announcement事件,通知新用户加入:</li>
+</ol>
+<pre class=js><code>socket.on(<span class="hljs-string">'announcement'</span>,<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">msg</span>)</span>{
+            $(<span class="hljs-string">'.otherEnter ul'</span>).append(<span class="hljs-string">'&lt;li&gt;'</span>+msg+<span class="hljs-string">'&lt;/li&gt;'</span>);
+        });
+</code></pre>
+<ol start="5">
+<li>监听由服务端当其他用户有消息发送时触发的text事件，将新消息加入显示:</li>
+</ol>
+<pre class=js><code>socket.on(<span class="hljs-string">'text'</span>,<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">content</span>)</span>{
+            $(<span class="hljs-string">'.chatList ul'</span>).append(<span class="hljs-string">'&lt;li&gt;'</span>+ content +<span class="hljs-string">'&lt;/li&gt;'</span>);
+        });
+</code></pre>
+<ol start="6">
+<li>自己发的消息要在触发服务器text事件之前显示,因为socket.io广播是默认不给本用户触发指定事件的:</li>
+</ol>
+<pre class=js><code>$(<span class="hljs-string">'.chatList ul'</span>).append(<span class="hljs-string">'&lt;li&gt;&lt;span&gt;me&lt;/span&gt;:'</span>+$(<span class="hljs-string">'#msg'</span>).val()+<span class="hljs-string">'&lt;/li&gt;'</span>)
+            socket.emit(<span class="hljs-string">'text'</span>,$(<span class="hljs-string">'#msg'</span>).val());
+</code></pre>
+<h4>c. 服务端 server.js</h4>
+<ol>
+<li>建立静态文件服务器，用到express-static中间件:</li>
+</ol>
+<pre class=js><code>app.use(staticServer(<span class="hljs-string">'./'</span>));
+app.get(<span class="hljs-string">'/'</span>,<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">req,res</span>)</span>{
+    res.render(<span class="hljs-string">'index'</span>);
+});
+http.listen(<span class="hljs-number">8068</span>,<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>)</span>{
+    <span class="hljs-built_in">console</span>.log(<span class="hljs-string">"Sever has been listened at port 8068"</span>);
+});
+</code></pre>
+<p><img src="http://7xsi10.com1.z0.glb.clouddn.com/chatServer.png" alt="server"></p>
+<ol start="2">
+<li>将http服务绑定到socket.io服务:</li>
+</ol>
+<pre class=js><code><span class="hljs-keyword">var</span> io = <span class="hljs-built_in">require</span>(<span class="hljs-string">'socket.io'</span>)(http);
+</code></pre>
+<ol start="3">
+<li>监听connection事件，当有新连接时触发:</li>
+</ol>
+<pre class=js><code>io.on(<span class="hljs-string">"connection"</span>,<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">socket</span>)</span>{
+	<span class="hljs-built_in">console</span>.log(<span class="hljs-string">"some on connected"</span>);
+}
+</code></pre>
+<p><img src="http://7xsi10.com1.z0.glb.clouddn.com/chatconnect.png" alt="connect">
+4. 新用户连接:join事件,var total = 0;用于统计在线人数,每次新用户加入，通知其他所有用户，并完成total的更新，这就要用到socket.io的广播了，通过.broadcast来进行广播:</p>
+<pre class=js><code>total++;
+<span class="hljs-built_in">console</span>.log(name+<span class="hljs-string">"joined"</span>);
+socket.broadcast.emit(<span class="hljs-string">'announcement'</span>,name+<span class="hljs-string">' joined in'</span>);
+socket.broadcast.emit(<span class="hljs-string">'totalChange'</span>,total);  <span class="hljs-comment">//广播用户总数改变事件</span>
+</code></pre>
+<ol start="5">
+<li>当某个链接断开时，需要通知其他用户，total更新,socket.io的disconnect事件，当链接断开时触发:</li>
+</ol>
+<pre class=js><code>socket.on(<span class="hljs-string">'disconnection'</span>,<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>)</span>{
+        total--;
+        <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'hi,leave'</span>);
+        socket.broadcast.emit(<span class="hljs-string">'announcement'</span>,name+<span class="hljs-string">' leved away'</span>);
+        socket.broadcast.emit(<span class="hljs-string">'totalChange'</span>,total);
+    });
+</code></pre>
+<ol start="6">
+<li>广播聊天内容:</li>
+</ol>
+<pre class=js><code>socket.on(<span class="hljs-string">'text'</span>,<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">msg</span>)</span>{
+    socket.broadcast.emit(<span class="hljs-string">'text'</span>,<span class="hljs-string">'&lt;span&gt;'</span>+name+<span class="hljs-string">'&lt;/span&gt;'</span>+<span class="hljs-string">':'</span>+msg);
+});
+</code></pre>
+<h4>最终测试效果如下：</h4>
+<p><img src="http://7xsi10.com1.z0.glb.clouddn.com/user1.png" alt="user1">
+<img src="http://7xsi10.com1.z0.glb.clouddn.com/user2.png" alt="user2">
+<img src="http://7xsi10.com1.z0.glb.clouddn.com/user3.png" alt="user3"></p>
+<p>正如截图中的旁白君所说，应用还有bug和需要改善的地方，所以这篇文章会继续更新！
+有兴趣的，可以到我的github查看应用全部源码:
+<a href="https://github.com/laoqiren/socket.io-demo">我的github</a></p>
+
+    </div>
+  </div>
+
+       
+        <div id="footer">
+            © 2017 <a href="#">laoqiren</a>
+            主题提供: <a href="https://github.com/laoqiren/yohe">Yohe</a>
+            Powered By <a href="https://github.com/laoqiren/yohe">Yohe</a>
+            图片存储: <a href="http://www.qiniu.com/">qiniu</a>
+        </div>
+    </div>
+
+    
+    <script>hljs.initHighlightingOnLoad();</script>

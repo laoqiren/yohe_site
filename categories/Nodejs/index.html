@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="/yohe_site/assets/css/layout.css">
+    
+     <link rel="stylesheet" href="/yohe_site/assets/css/list.css">
+
+    <title>
+    My Blog
+</title>
+</head>
+<body>
+
+    <div id="container">
+        <div id="nav">
+            <div class="site-header-info">
+                <a href="/yohe_site/">
+                    <img src="https://avatars2.githubusercontent.com/u/16136702?v=4&s=120" width="100" height="100"/>
+                </a>
+                <h1 class="site-title">My Blog</h1>
+                <h2 class="site-description">爱技术，爱生活</h2>
+            </div>
+
+            
+    
+                <nav class="site-navigation main-navigation">
+                    <div class="menu">
+                        <ul>
+                            <li>
+                                <a href="/yohe_site/tags">标签</a>
+                            </li>
+                            <li>    
+                                <a href="/yohe_site/categories">作品</a>
+                            </li>
+                            <li>
+                                <a href="/yohe_site/about">关于</a> 
+                            </li>
+                        </ul>
+                    </div>
+                </nav>
+            
+                <nav class="categories">
+                    <h1 class="cate-title">categories</h1>
+                    <ul>
+                        
+                            <li>
+                                <a href=/yohe_site/categories/Nodejs/index.html>Nodejs</a>
+                            </li>
+                        
+                            <li>
+                                <a href=/yohe_site/categories/Haskell/index.html>Haskell</a>
+                            </li>
+                        
+                            <li>
+                                <a href=/yohe_site/categories/JavaScript/index.html>JavaScript</a>
+                            </li>
+                        
+                            <li>
+                                <a href=/yohe_site/categories/Web安全/index.html>Web安全</a>
+                            </li>
+                        
+                            <li>
+                                <a href=/yohe_site/categories/React/index.html>React</a>
+                            </li>
+                        
+                            <li>
+                                <a href=/yohe_site/categories/HTML5/index.html>HTML5</a>
+                            </li>
+                        
+                            <li>
+                                <a href=/yohe_site/categories/React Native/index.html>React Native</a>
+                            </li>
+                        
+                            <li>
+                                <a href=/yohe_site/categories/docker/index.html>docker</a>
+                            </li>
+                        
+                            <li>
+                                <a href=/yohe_site/categories/前端工程/index.html>前端工程</a>
+                            </li>
+                        
+                            <li>
+                                <a href=/yohe_site/categories/Yohe/index.html>Yohe</a>
+                            </li>
+                        
+                            <li>
+                                <a href=/yohe_site/categories/css/index.html>css</a>
+                            </li>
+                        
+                            <li>
+                                <a href=/yohe_site/categories/云计算/index.html>云计算</a>
+                            </li>
+                        
+                            <li>
+                                <a href=/yohe_site/categories/Vue/index.html>Vue</a>
+                            </li>
+                        
+                            <li>
+                                <a href=/yohe_site/categories/项目总结/index.html>项目总结</a>
+                            </li>
+                        
+                            <li>
+                                <a href=/yohe_site/categories/数据结构与算法/index.html>数据结构与算法</a>
+                            </li>
+                        
+                            <li>
+                                <a href=/yohe_site/categories/WebGL/index.html>WebGL</a>
+                            </li>
+                        
+                            <li>
+                                <a href=/yohe_site/categories/Linux/index.html>Linux</a>
+                            </li>
+                        
+                    </ul>
+                </nav>
+            
+ 
+        </div>
+
+        
+    <header class="list-header">
+        <h1 class="list-title"><span>Nodejs</span></h1>
+        <div class="taxonomy-description">
+            <p>
+                There are 10 posts in <strong>Nodejs</strong>
+            </p>
+        </div>
+    </header>
+
+    
+        <article>
+            <header class="article-header">
+                <h1><a href=/yohe_site/2017/06/29/Buffer-Stream与内存管理/index.html>Buffer/Stream与内存管理</a></h1>
+            </header>
+            <p>
+                <p>这篇文章将开启我的Node源码解读系列，结合源码和官方文档，探索其背后的原理。首先想谈谈Stream这强大而又容易误解的功能，文章主要从Buffer/Stream与内存分配的关系角度来分析。</p>
+
+            </p>
+            <p>
+                <a href=/yohe_site/2017/06/29/Buffer-Stream与内存管理/index.html>阅读更多</a>
+            </p>
+            <footer class="article-footer">
+                in Nodejs | 2017-06-29 | 0评论
+            </footer>
+        </article>
+    
+        <article>
+            <header class="article-header">
+                <h1><a href=/yohe_site/2016/11/27/Cluster模块/index.html>Cluster模块</a></h1>
+            </header>
+            <p>
+                <p>Node的一大优点就是异步IO,适合I/O密集型的高并发业务，但是它是单线程的，当面对CPU密集型业务的时候，性能就会出现瓶颈。但是幸运的是，子进程能够解决这个问题，与HTML5的Web Worker类似，通过主进程管理一系列的子进程来利用多核CPU以实现集群的功能。</p>
+<p>关于集群是一个比较大的话题。Node原生Child_process就可以实现集群，但是要处理好一系列问题，如自动重启，自杀信号，负载均衡等问题，需要我们做大量的工作。从Node V0.8开始，其内置一个核心模块Cluster,帮助我们更加方便的实现单机集群。</p>
+
+            </p>
+            <p>
+                <a href=/yohe_site/2016/11/27/Cluster模块/index.html>阅读更多</a>
+            </p>
+            <footer class="article-footer">
+                in Nodejs | 2016-11-27 | 0评论
+            </footer>
+        </article>
+    
+        <article>
+            <header class="article-header">
+                <h1><a href=/yohe_site/2016/11/01/JWTs之我的前后端完全分离实践/index.html>JWTs之我的前后端完全分离实践</a></h1>
+            </header>
+            <p>
+                <blockquote>
+<p>JWT是一种用于双方之间传递安全信息的简洁的、URL安全的表述性声明规范。JWT作为一个开放的标准（ RFC 7519 ），定义了一种简洁的，自包含的方法用于通信双方之间以Json对象的形式安全的传递信息。因为数字签名的存在，这些信息是可信的，JWT可以使用HMAC算法或者是RSA的公私秘钥对进行签名。</p>
+</blockquote>
+<p>之前发表了一篇关于session相关的文章，当时也说明了session这种方式的一些问题，主要就是一个安全性问题。而作为OAuth标准的Access_Token具体解决方案之一的JWTs,使得一些问题得到很好的解决。</p>
+<p>文章主要介绍JWT的相关知识以及Nodejs中的JWT,最后，以一个我最近写的论坛为实例，总结一下我在前后端完全分离方面的实践。</p>
+<p>论坛采用Vue+express+mongodb开发，不断完善ing,欢迎访问github项目地址star:<a href="https://github.com/laoqiren/vue-express-forum">https://github.com/laoqiren/vue-express-forum</a>,论坛在线地址:<a href="http://120.77.38.217:3000">http://120.77.38.217:3000</a></p>
+<p><img src="http://7xsi10.com1.z0.glb.clouddn.com/UfIbUjj.png" alt="JWT"></p>
+
+            </p>
+            <p>
+                <a href=/yohe_site/2016/11/01/JWTs之我的前后端完全分离实践/index.html>阅读更多</a>
+            </p>
+            <footer class="article-footer">
+                in Nodejs | 2016-11-01 | 0评论
+            </footer>
+        </article>
+    
+        <article>
+            <header class="article-header">
+                <h1><a href=/yohe_site/2017/07/24/Process初始化与模块系统形成/index.html>Process初始化与模块系统形成</a></h1>
+            </header>
+            <p>
+                <p>当我们运行<code>node app.js</code>的时候都发生了什么？<code>process</code>的初始化，模块系统的形成，C/C++与js的结合等等。从源头出发，探索背后的奥秘。</p>
+
+            </p>
+            <p>
+                <a href=/yohe_site/2017/07/24/Process初始化与模块系统形成/index.html>阅读更多</a>
+            </p>
+            <footer class="article-footer">
+                in Nodejs | 2017-07-24 | 0评论
+            </footer>
+        </article>
+    
+        <article>
+            <header class="article-header">
+                <h1><a href=/yohe_site/2017/09/07/RabbitMQ/index.html>RabbitMQ</a></h1>
+            </header>
+            <p>
+                <p>学习RabbitMQ.以Node client实现为例。</p>
+<p>RabbitMQ是一个由erlang开发的AMQP（Advanced Message Queue ）的开源实现。目前RabbitMQ基于AMQP 0-9-1。</p>
+<p><img src="http://img.blog.csdn.net/20160310091724939" alt="http://img.blog.csdn.net/20160310091724939"></p>
+
+            </p>
+            <p>
+                <a href=/yohe_site/2017/09/07/RabbitMQ/index.html>阅读更多</a>
+            </p>
+            <footer class="article-footer">
+                in Nodejs | 2017-09-07 | 0评论
+            </footer>
+        </article>
+    
+        <article>
+            <header class="article-header">
+                <h1><a href=/yohe_site/2017/07/27/libuv网络IO机制/index.html>libuv网络I/O机制</a></h1>
+            </header>
+            <p>
+                <p>两条故事线去探索http.Server从<code>listen()</code>到<code>connection</code>事件的触发其背后的原理，主要是为了理解libuv在网络I/O方面的异步实现。一条故事线看TCP handle的I/O观察者是怎样加入到event loop的观察者队列，另一条故事线看隐藏于背后的event loop在liunx下如何利用系统的<code>epoll</code>机制注册并收集events从而调用观察者回调。</p>
+
+            </p>
+            <p>
+                <a href=/yohe_site/2017/07/27/libuv网络IO机制/index.html>阅读更多</a>
+            </p>
+            <footer class="article-footer">
+                in Nodejs | 2017-07-27 | 0评论
+            </footer>
+        </article>
+    
+        <article>
+            <header class="article-header">
+                <h1><a href=/yohe_site/2016/04/21/nodejs刷百度贴吧回复/index.html>nodejs刷百度贴吧回复</a></h1>
+            </header>
+            <p>
+                <p>nodeJS提供的网络API，使得nodeJS既能作为服务端接受请求，又能作为客户端像其他服务器发起请求，对于一些论坛诸如贴吧之类的，可以通过请求信息（cookie信息)就能够实现脚本自动发帖，这是初次接触nodeJS的尝试，虽然用到的技术较简单，但是还是挺有趣的，比如你想给自己顶贴之类的小需求，可以自己写一个刷回复的脚步来实现哦！</p>
+
+            </p>
+            <p>
+                <a href=/yohe_site/2016/04/21/nodejs刷百度贴吧回复/index.html>阅读更多</a>
+            </p>
+            <footer class="article-footer">
+                in Nodejs | 2016-04-21 | 0评论
+            </footer>
+        </article>
+    
+        <article>
+            <header class="article-header">
+                <h1><a href=/yohe_site/2016/09/24/session身份验证/index.html>session身份验证</a></h1>
+            </header>
+            <p>
+                <p>我们需要验证程序的使用者身份，需要一定的技术手段。由于http是一种无状态的协议，所以就需要额外的解决方案。最早的解决方案是Cookie,然而Cookie本身有一定限制，无论储存容量还是安全性考虑，都需要其他技术来配合进行身份的识别。</p>
+<p>Session就是解决这个问题，其数据储存在服务器，更加安全，其一般通过cookie来与客户端建立联系,这其中又会涉及到一些安全问题，性能问题等等。这篇文章就来简单的总结一下自己在实践学习当中的理解吧。。。</p>
+<p><strong>文章目录</strong></p>
+<ol>
+<li>Cookie</li>
+<li>Session与Cookie</li>
+<li>express当中的express-session</li>
+<li>Session安全</li>
+<li>实例项目分析</li>
+</ol>
+
+            </p>
+            <p>
+                <a href=/yohe_site/2016/09/24/session身份验证/index.html>阅读更多</a>
+            </p>
+            <footer class="article-footer">
+                in Nodejs | 2016-09-24 | 0评论
+            </footer>
+        </article>
+    
+        <article>
+            <header class="article-header">
+                <h1><a href=/yohe_site/2016/06/01/基于socket-io的聊天应用/index.html>基于socket.io的聊天应用</a></h1>
+            </header>
+            <p>
+                <p>WebSocket是HTML5的一种新通信协议，它实现了浏览器与服务器之间的双向通讯。而Socket.IO是一个完全由JavaScript实现、基于Node.js、支持WebSocket的协议用于实时通信、跨平台的开源框架，它包括了客户端的JavaScript和服务器端的Node.js。</p>
+<p>本文记录利用socket.io开发聊天室的实践
+<img src="http://7xsi10.com1.z0.glb.clouddn.com/user1.png" alt="user1"></p>
+
+            </p>
+            <p>
+                <a href=/yohe_site/2016/06/01/基于socket-io的聊天应用/index.html>阅读更多</a>
+            </p>
+            <footer class="article-footer">
+                in Nodejs | 2016-06-01 | 0评论
+            </footer>
+        </article>
+    
+        <article>
+            <header class="article-header">
+                <h1><a href=/yohe_site/2017/07/16/聊聊Agent&Proxy/index.html>聊聊Agent/Proxy</a></h1>
+            </header>
+            <p>
+                <p>聊聊Agent/Proxy，以Node为例，看看<code>ClientRequest</code>是如何通过<code>http.Agent</code>去管理socket池，用Node写http/https proxy,再自定义Agent并在Agent与目标源之间加入Node proxy。</p>
+
+            </p>
+            <p>
+                <a href=/yohe_site/2017/07/16/聊聊Agent&Proxy/index.html>阅读更多</a>
+            </p>
+            <footer class="article-footer">
+                in Nodejs | 2017-07-16 | 0评论
+            </footer>
+        </article>
+    
+
+       
+        <div id="footer">
+            © 2017 <a href="#">laoqiren</a>
+            主题提供: <a href="https://github.com/laoqiren/yohe">Yohe</a>
+            Powered By <a href="https://github.com/laoqiren/yohe">Yohe</a>
+            图片存储: <a href="http://www.qiniu.com/">qiniu</a>
+        </div>
+    </div>
+
+    
+</body>
+</html>
