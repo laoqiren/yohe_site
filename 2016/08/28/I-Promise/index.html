@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="/yohe_site/assets/css/layout.css">
+    <link rel="stylesheet" href="https://imsun.github.io/gitment/style/default.css">
+    <script src="https://imsun.github.io/gitment/dist/gitment.browser.js"></script>
+    
+  <link rel="stylesheet"
+  href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/railscasts.min.css">
+  <link rel="stylesheet" href="/yohe_site/assets/css/post.css"/>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+
+    <title>
+    My Blog
+</title>
+</head>
+<body>
+
+    <div id="container">
+        <div id="nav">
+            <div class="site-header-info">
+                <a href="/yohe_site/">
+                    <img src="https://avatars2.githubusercontent.com/u/16136702?v=4&s=120" width="100" height="100"/>
+                </a>
+                <h1 class="site-title">My Blog</h1>
+                <h2 class="site-description">爱技术，爱生活</h2>
+            </div>
+
+            
+  <div class="post-info">
+    <div class="site-published-separator"></div>
+    <h2 class="site-published">Published</h2>
+    <h2 class="site-publish-date">2016-08-28</h2>
+  </div>
+ 
+        </div>
+
+        
+  <div class="post">
+    <div class="post-header">
+      <h2 class="post-cate">in JavaScript</h2>
+      <h1>I Promise</h1>
+    </div>
+    <div class="post-content">
+        <p>正如标题那样，Promise对未来某个事件做出承诺，比如<code>如果成功，那么...；如果失败，那么...</code>。是一种相对于回调和事件订阅更高级的抽象，本文就从其起源，实现，面临的问题等方面分析Promise。</p>
+<!--more-->
+<p>Promise被广为所知是来自于Jquery的Promise/Deferred：</p>
+<h1>Jquery Promise/Deferred</h1>
+<p><code>$.when()</code>:如果向 jQuery.when 传入一个延迟对象，那么会返回它的 Promise 对象(延迟方法的一个子集)。可以继续绑定 Promise 对象的其它方法，例如， defered.then 。当延迟对象已经被受理（resolved）或被拒绝(rejected）（通常是由创建延迟对象的最初代码执行的），那么就会调用适当的回调函数。</p>
+<p>有多个延迟对象传递给jQuery.when ，该方法返回一个新的“宿主”延迟对象，跟踪所有已通过Deferreds聚集状态。 当所有的延迟对象被受理（resolve）时，该方法才会受理它的 master 延迟对象。当其中有一个延迟对象被拒绝（rejected）时，该方法就会拒绝它的 master 延迟对象。如果 master 延迟对象被受理（resolved），那么会传入所有延迟对象的受理（resolved）值，这些延迟对象指的就是传给 jQuery.when 的参数。</p>
+<pre class=js><code><span class="hljs-keyword">let</span> dtd = $.Deferred();
+    <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">wait</span>(<span class="hljs-params">dtd</span>)</span>{
+        <span class="hljs-keyword">let</span> tasks = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>)</span>{
+            <span class="hljs-built_in">console</span>.log(<span class="hljs-string">"执行完毕"</span>);
+            dtd.resolve(<span class="hljs-string">"hello"</span>,<span class="hljs-string">"恩恩"</span>,<span class="hljs-string">"你在哪儿"</span>);
+        }
+        setTimeout(tasks,<span class="hljs-number">5000</span>);
+        <span class="hljs-keyword">return</span> dtd;
+    }
+    $.when(wait(dtd))
+    .done(<span class="hljs-function">(<span class="hljs-params">a1,a2,a3</span>)=&gt;</span><span class="hljs-built_in">console</span>.log(a1,a2,a3))
+    .fail(<span class="hljs-function"><span class="hljs-params">()</span>=&gt;</span><span class="hljs-built_in">console</span>.log(<span class="hljs-string">"完了"</span>))
+
+    dtd.resolve(<span class="hljs-string">"lfjaljfl"</span>,<span class="hljs-string">"hfaljfla"</span>,<span class="hljs-string">"hhhhh"</span>)
+</code></pre>
+<p>上述做法有问题，因为<code>wait</code>方法暴露出的是Deferred对象，含有可以改变内部状态的方法，可以被外界代码随时用于改变状态，如上面的例子，在外面调用了<code>resolve</code>方法，则一开始就会调用<code>done</code>方法的回调，后面<code>wait</code>内异步操作执行完毕不会再执行<code>done</code>的回调了。</p>
+<p>换种方式：</p>
+<pre class=js><code><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">wait1</span>(<span class="hljs-params"></span>)</span>{
+    <span class="hljs-keyword">let</span> dtd = $.Deferred();
+    <span class="hljs-keyword">let</span> tasks = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>)</span>{
+        <span class="hljs-built_in">console</span>.log(<span class="hljs-string">"执行完毕"</span>);
+        dtd.resolve(<span class="hljs-string">"hello"</span>,<span class="hljs-string">"恩恩"</span>,<span class="hljs-string">"你在哪儿1"</span>);
+    }
+    setTimeout(tasks,<span class="hljs-number">5000</span>);
+    <span class="hljs-keyword">return</span> dtd.promise();
+}
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">wait2</span>(<span class="hljs-params"></span>)</span>{
+    <span class="hljs-keyword">let</span> dtd = $.Deferred();
+    <span class="hljs-keyword">let</span> tasks = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>)</span>{
+        <span class="hljs-built_in">console</span>.log(<span class="hljs-string">"执行完毕"</span>);
+        dtd.resolve(<span class="hljs-string">"hello"</span>,<span class="hljs-string">"恩恩"</span>,<span class="hljs-string">"你在哪儿2"</span>);
+    }
+    setTimeout(tasks,<span class="hljs-number">6000</span>);
+    <span class="hljs-keyword">return</span> dtd.promise();
+}
+
+$.when(wait1(),wait2())
+.then(<span class="hljs-function">(<span class="hljs-params">r1,r2</span>)=&gt;</span>{
+    <span class="hljs-keyword">return</span> <span class="hljs-string">"r1.concat(r2)"</span>
+}).then(<span class="hljs-function"><span class="hljs-params">rs</span>=&gt;</span><span class="hljs-built_in">console</span>.log(rs)) 
+ <span class="hljs-comment">//["hello", "恩恩", "你在哪儿1"] ["hello", "恩恩", "你在哪儿2"]</span>
+</code></pre>
+<p>deferred.promise() 方法允许一个异步函数阻止那些干涉其内部请求的进度（progress）或状态（status）的其它代码。Promise （承诺）对象仅会暴露那些需要绑定额外的处理或判断状态的延迟方法(then, done, fail, always, pipe, progress, 和 state)时，并不会暴露任何用于改变状态的延迟方法(resolve, reject, notify, resolveWith, rejectWith, 和 notifyWith).</p>
+<h1>Promise/A</h1>
+<p>09年，Promise/Deferred模式被抽象为一个提议草案发布在CommonJS规范中，后来抽象出了一系列模型，包括<code>Promise/A</code>,具体标准请看<a href="https://promisesaplus.com/">https://promisesaplus.com/</a></p>
+<p><img src="https://mdn.mozillademos.org/files/8633/promises.png" alt="https://mdn.mozillademos.org/files/8633/promises.png"></p>
+<h2>Pub/Sub实现</h2>
+<p>这个就可以看做是事件订阅模式和Promise的小小联系。</p>
+<pre class=js><code><span class="hljs-keyword">const</span> EventEmitter = <span class="hljs-built_in">require</span>(<span class="hljs-string">"events"</span>);
+<span class="hljs-keyword">const</span> util = <span class="hljs-built_in">require</span>(<span class="hljs-string">"util"</span>);
+
+<span class="hljs-keyword">let</span> <span class="hljs-built_in">Promise</span> = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>)</span>{
+    EventEmitter.call(<span class="hljs-keyword">this</span>);
+};
+util.inherits(<span class="hljs-built_in">Promise</span>,EventEmitter);
+
+<span class="hljs-built_in">Promise</span>.prototype.then = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">fulfilledHandler,errorHandler,progressHandler</span>)</span>{
+    <span class="hljs-keyword">if</span>(<span class="hljs-keyword">typeof</span> fulfilledHandler === <span class="hljs-string">'function'</span>){
+        <span class="hljs-keyword">this</span>.once(<span class="hljs-string">'success'</span>,fulfilledHandler);
+    }
+    <span class="hljs-keyword">if</span>(<span class="hljs-keyword">typeof</span> errorHandler === <span class="hljs-string">'function'</span>){
+        <span class="hljs-keyword">this</span>.once(<span class="hljs-string">'error'</span>,errorHandler);
+    }
+    <span class="hljs-keyword">if</span>(<span class="hljs-keyword">typeof</span> progressHandler === <span class="hljs-string">'function'</span>){
+        <span class="hljs-keyword">this</span>.once(<span class="hljs-string">'progress'</span>,progressHandler);
+    }
+    <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>;
+}
+
+<span class="hljs-keyword">let</span> Deferred = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>)</span>{
+    <span class="hljs-keyword">this</span>.state = <span class="hljs-string">'unfulfilled'</span>;
+    <span class="hljs-keyword">this</span>.promise = <span class="hljs-keyword">new</span> <span class="hljs-built_in">Promise</span>();
+}
+Deferred.prototype.resolve = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">obj</span>)</span>{
+    <span class="hljs-keyword">this</span>.state = <span class="hljs-string">'fulfilled'</span>;
+    <span class="hljs-keyword">this</span>.promise.emit(<span class="hljs-string">'success'</span>,obj);
+};
+
+Deferred.prototype.reject = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">err</span>)</span>{
+    <span class="hljs-keyword">this</span>.state = <span class="hljs-string">'failed'</span>;
+    <span class="hljs-keyword">this</span>.promise.emit(<span class="hljs-string">'error'</span>,err);
+}
+
+Deferred.prototype.progress = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">data</span>)</span>{
+    <span class="hljs-keyword">this</span>.promise.emit(<span class="hljs-string">'progress'</span>,data);
+}
+</code></pre>
+<p>但是，面临一个问题，那就是链式调用问题，多次调用<code>then()</code>方法，发现只会针对<code>resolve()</code>传入的value多次触发success事件,比如:</p>
+<pre class=js><code><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">promisify</span>(<span class="hljs-params"></span>)</span>{
+    <span class="hljs-keyword">let</span> dtd = <span class="hljs-keyword">new</span> Deferred();
+    setTimeout(<span class="hljs-function"><span class="hljs-params">()</span>=&gt;</span>dtd.resolve(<span class="hljs-string">"hello1"</span>),<span class="hljs-number">3000</span>);
+    <span class="hljs-keyword">return</span> dtd.promise;
+}
+
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">promisify2</span>(<span class="hljs-params"></span>)</span>{
+    <span class="hljs-keyword">let</span> dtd = <span class="hljs-keyword">new</span> Deferred();
+    setTimeout(<span class="hljs-function"><span class="hljs-params">()</span>=&gt;</span>dtd.resolve(<span class="hljs-string">"hello2"</span>),<span class="hljs-number">3000</span>);
+    <span class="hljs-keyword">return</span> dtd.promise;
+}
+
+<span class="hljs-comment">// 并不能正常完成序列执行的链式调用。</span>
+promisify()
+    .then(<span class="hljs-function"><span class="hljs-params">result</span>=&gt;</span>{
+        <span class="hljs-built_in">console</span>.log(result)
+        <span class="hljs-keyword">return</span> promisify2();
+    })
+    .then(<span class="hljs-function"><span class="hljs-params">result</span>=&gt;</span>{
+        <span class="hljs-built_in">console</span>.log(result);
+    })
+<span class="hljs-comment">// hello1 hello1</span>
+</code></pre>
+<h2>链式Promise</h2>
+<p>我们要实现像jq的Promise/Deferred那样链式执行，主要处理两种情况：</p>
+<ol>
+<li>当<code>fulfilledHandler</code>返回非promise时，将结果作为下一个fulfilledHandler的参数；</li>
+<li>当<code>fulfilledHandler</code>返回新的promise时，等待新的promise完成后执行后续任务;</li>
+</ol>
+<p>我在《深入浅出Node.js》书上的实现基础上做了一些改进和完善：</p>
+<pre class=js><code><span class="hljs-keyword">let</span> Deferred = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>)</span>{
+    <span class="hljs-keyword">this</span>.promise = <span class="hljs-keyword">new</span> <span class="hljs-built_in">Promise</span>();
+}
+
+Deferred.prototype.resolve = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">...obj</span>)</span>{
+    <span class="hljs-keyword">let</span> promise = <span class="hljs-keyword">this</span>.promise;
+    <span class="hljs-keyword">let</span> handler;
+    <span class="hljs-keyword">while</span>((handler=promise.queue.shift())){
+        <span class="hljs-keyword">if</span>(handler &amp;&amp; handler.fulfilled) {
+            <span class="hljs-keyword">let</span> ret = handler.fulfilled(...obj);
+            <span class="hljs-keyword">if</span>(ret &amp;&amp; ret.isPromise){
+                <span class="hljs-comment">/*
+                如果返回的是新的Promise，将deferred的promise指向新的promise,并转交任务队列，然后终止循环执行任务队列，等到控制新的promise状态的deferred对象调用了resolve才再一次来到循环。
+                */</span>
+                ret.queue = promise.queue;
+                <span class="hljs-keyword">this</span>.promise = ret;
+                <span class="hljs-keyword">return</span>;
+            }
+            obj = [ret]; <span class="hljs-comment">//如果返回非promise,就继续执行后续任务，并将返回值作为下一个任务的回调参数。</span>
+        }
+    }
+}
+
+Deferred.prototype.reject = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>)</span>{}　<span class="hljs-comment">//省略</span>
+
+<span class="hljs-keyword">let</span> <span class="hljs-built_in">Promise</span> = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>)</span>{
+    <span class="hljs-keyword">this</span>.queue = [];
+    <span class="hljs-keyword">this</span>.isPromise = <span class="hljs-literal">true</span>;
+}
+<span class="hljs-built_in">Promise</span>.prototype.then = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">fulfilledHandler,errorHandler,progressHandler</span>)</span>{
+    <span class="hljs-keyword">let</span> handler = {};
+    <span class="hljs-keyword">if</span>(<span class="hljs-keyword">typeof</span> fulfilledHandler === <span class="hljs-string">'function'</span>){
+        handler.fulfilled = fulfilledHandler;
+    }
+    <span class="hljs-keyword">if</span>(<span class="hljs-keyword">typeof</span> errorHandler === <span class="hljs-string">'function'</span>){
+        handler.error = errorHandler;
+    }
+    <span class="hljs-comment">// 每次调用then,都将回调加入到队列里</span>
+    <span class="hljs-keyword">this</span>.queue.push(handler);
+    <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>;
+}
+
+<span class="hljs-comment">//对Promise/Deferred的封装，符合规范的语法</span>
+
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">promise</span>(<span class="hljs-params">resolver</span>) </span>{
+    <span class="hljs-keyword">if</span> (<span class="hljs-keyword">typeof</span> resolver !== <span class="hljs-string">"function"</span>) {
+        <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-built_in">TypeError</span>(<span class="hljs-string">"resolver must be a function."</span>);
+    }
+    <span class="hljs-keyword">var</span> deferred = <span class="hljs-keyword">new</span> Deferred();
+    <span class="hljs-keyword">try</span> {
+        resolver(deferred.resolve.bind(deferred), 
+            deferred.reject.bind(deferred));
+    } <span class="hljs-keyword">catch</span> (reason) {
+        deferred.reject(reason);
+    }
+    <span class="hljs-keyword">return</span> deferred.promise;
+}
+</code></pre>
+<p>可以看到实现思想还是<code>Promise/Deferred</code>，<code>Deferred</code>来管理状态，每个Promise实例里边维护一个任务队列，通过<code>then</code>调用将任务加入到队列里边，<code>Deferred</code>调用<code>resolve</code>或<code>reject</code>改变状态，并挨个执行任务队列里的任务，但是遇到某个任务返回新的Promise时，需要暂停任务执行，将任务队列转交，并等待新的异步任务完成后继续执行任务。</p>
+<p>最后对<code>Promise/Deferred</code>进行了封装，形成最终与标准语法相近的<code>promise</code>构造函数。</p>
+<p>上述例子只是一个粗略的实现，还有许多细节问题，比如错误处理，在<code>fulfilled</code>函数里抛出错误的处理，<code>catch</code>实现，其他重要接口，如<code>Promise.all(),Promise.race()</code>等。</p>
+<h2>存在的问题:</h2>
+<ol>
+<li>
+<p>对于异步操作API，需要进行封装才能成为Promise对象，可以借助第三方API进行快速封装。</p>
+</li>
+<li>
+<p>太复杂的异步场景，会使得链式过长。</p>
+</li>
+</ol>
+<h2>第三方实现</h2>
+<p>bluebird: <a href="https://github.com/kriskowal/q">https://github.com/kriskowal/q</a></p>
+<p>Q: <a href="https://github.com/kriskowal/q">https://github.com/kriskowal/q</a></p>
+<p>when: <a href="https://github.com/cujojs/when">https://github.com/cujojs/when</a></p>
+<h2>官方标准实现</h2>
+<p>参照ES6 <code>Promise</code>标准。</p>
+
+    </div>
+    <div id="gitcomment"></div>
+  </div>
+
+       
+        <div id="footer">
+            © 2017 <a href="#">laoqiren</a>
+            主题提供: <a href="https://github.com/laoqiren/yohe">Yohe</a>
+            Powered By <a href="https://github.com/laoqiren/yohe">Yohe</a>
+            图片存储: <a href="http://www.qiniu.com/">qiniu</a>
+        </div>
+    </div>
+
+    
+    <script>hljs.initHighlightingOnLoad();</script>
+    <script>
+        var gitment = new Gitment({
+          owner: "laoqiren",
+          repo: "yohe_site",
+          oauth: {
+            client_id: "73b3a1c0efb357bcbb91",
+            client_secret: "71e4bb221d644944060025407944fe2f51126ee6"
+          }
+        })
+        gitment.render('gitcomment')
+    </script>
+
+</body>
+</html>
