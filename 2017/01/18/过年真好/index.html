@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="/yohe_site/assets/css/layout.css">
+    <link rel="stylesheet" href="https://imsun.github.io/gitment/style/default.css">
+    <script src="https://imsun.github.io/gitment/dist/gitment.browser.js"></script>
+    
+  <link rel="stylesheet"
+  href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/railscasts.min.css">
+  <link rel="stylesheet" href="/yohe_site/assets/css/post.css"/>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+
+    <title>
+    My Blog
+</title>
+</head>
+<body>
+
+    <div id="container">
+        <div id="nav">
+            <div class="site-header-info">
+                <a href="/yohe_site/">
+                    <img src="https://avatars2.githubusercontent.com/u/16136702?v=4&s=120" width="100" height="100"/>
+                </a>
+                <h1 class="site-title">My Blog</h1>
+                <h2 class="site-description">爱技术，爱生活</h2>
+            </div>
+
+            
+  <div class="post-info">
+    <div class="site-published-separator"></div>
+    <h2 class="site-published">Published</h2>
+    <h2 class="site-publish-date">2017-01-18</h2>
+  </div>
+ 
+        </div>
+
+        
+  <div class="post">
+    <div class="post-header">
+      <h2 class="post-cate">in life</h2>
+      <h1>过年真好</h1>
+    </div>
+    <div class="post-content">
+        <p>还有什么是比就别后的重复，游子回家更加激动人心的？如果有，那就是和家人在一起，好好过一个年！
+从县城到镇上的全程高速打通了，那叫一个爽啊。</p>
+<p>年味越来越浓，远方的家人一个一个回到家，只为这一年里最重要的时刻。过年有忙碌，走亲戚，祭祖。。。。。。但这真真儿的是一种享受哈哈。</p>
+<p>久别才懂得重逢的那份心情。珍惜。</p>
+<p>学习嘛还是要有的，学自己喜欢的，有规划的去学习，不做无用功。。。听着外面喜庆的音乐，心情一阵阵儿舒畅。</p>
+
+    </div>
+    <div id="gitcomment"></div>
+  </div>
+
+       
+        <div id="footer">
+            © 2017 <a href="#">laoqiren</a>
+            主题提供: <a href="https://github.com/laoqiren/yohe">Yohe</a>
+            Powered By <a href="https://github.com/laoqiren/yohe">Yohe</a>
+            图片存储: <a href="http://www.qiniu.com/">qiniu</a>
+        </div>
+    </div>
+
+    
+    <script>hljs.initHighlightingOnLoad();</script>
+    <script>
+        var gitment = new Gitment({
+          owner: "laoqiren",
+          repo: "yohe_site",
+          oauth: {
+            client_id: "73b3a1c0efb357bcbb91",
+            client_secret: "71e4bb221d644944060025407944fe2f51126ee6"
+          }
+        })
+        gitment.render('gitcomment')
+    </script>
+
+</body>
+</html>
