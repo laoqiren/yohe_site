@@ -1,0 +1,37 @@
+{% extends "./layout.html" %}
+
+{% block title %}
+    {{config.basic.title}}
+{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet"
+  href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/{{config.theme.highlightTheme}}.min.css">
+  <link rel="stylesheet" href="{{config.basic.root}}/assets/css/post.css"/>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+{% endblock %}
+
+{% block nav %}
+  <div class="post-info">
+    <div class="site-published-separator"></div>
+    <h2 class="site-published">Published</h2>
+    <h2 class="site-publish-date">{{post.date}}</h2>
+  </div>
+{% endblock %}
+
+{% block content %}
+  <div class="post-content">
+    <div class="post-header">
+      <h2 class="post-cate">in {{post.categories}}</h2>
+      <h1>{{post.title}}</h1>
+    </div>
+    <div class="post-content">
+        {{post.content}}
+    </div>
+  </div>
+{% endblock %}
+
+
+{% block script %}
+    <script>hljs.initHighlightingOnLoad();</script>
+{% endblock %}
