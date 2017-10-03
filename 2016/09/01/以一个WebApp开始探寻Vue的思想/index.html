@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <link rel="stylesheet" href="/yohe_site/assets/css/layout.css">
+    <link rel="stylesheet" href="https://imsun.github.io/gitment/style/default.css">
+    <script src="https://imsun.github.io/gitment/dist/gitment.browser.js"></script>
     
   <link rel="stylesheet"
   href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/railscasts.min.css">
@@ -37,7 +39,7 @@
         </div>
 
         
-  <div class="post-content">
+  <div class="post">
     <div class="post-header">
       <h2 class="post-cate">in Vue</h2>
       <h1>以一个WebApp开始探寻Vue的思想</h1>
@@ -207,6 +209,7 @@ router.start(App,<span class="hljs-string">'#app'</span>);
 <p>这或许是开学前的最后一篇文章了，大二了，我有许多要学习的，也有许多自己要去改进的，还有美丽的大学生活。加油。</p>
 
     </div>
+    <div id="gitcomment"></div>
   </div>
 
        
@@ -220,3 +223,17 @@ router.start(App,<span class="hljs-string">'#app'</span>);
 
     
     <script>hljs.initHighlightingOnLoad();</script>
+    <script>
+        var gitment = new Gitment({
+          owner: "laoqiren",
+          repo: "yohe_site",
+          oauth: {
+            client_id: "73b3a1c0efb357bcbb91",
+            client_secret: "71e4bb221d644944060025407944fe2f51126ee6"
+          }
+        })
+        gitment.render('gitcomment')
+    </script>
+
+</body>
+</html>
