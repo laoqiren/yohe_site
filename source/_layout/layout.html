@@ -19,11 +19,36 @@
                     <img src="https://avatars2.githubusercontent.com/u/16136702?v=4&s=120" width="100" height="100"/>
                 </a>
                 <h1 class="site-title">{{config.basic.title}}</h1>
-                <h2 class="site-description">爱技术，爱生活</h2>
+                <h2 class="site-description">{{config.basic.description}}</h2>
             </div>
 
             {% block nav %}
-                
+                <nav class="site-navigation main-navigation">
+                    <div class="menu">
+                        <ul>
+                            <li>
+                                <a href="{{config.basic.root}}/tags">标签</a>
+                            </li>
+                            <li>    
+                                <a href="{{config.basic.root}}/categories">作品</a>
+                            </li>
+                            <li>
+                                <a href="{{config.basic.root}}/about">关于</a> 
+                            </li>
+                        </ul>
+                    </div>
+                </nav>
+            
+                <nav class="categories">
+                    <h1 class="cate-title">categories</h1>
+                    <ul>
+                        {% for cate in categories %}
+                            <li>
+                                <a href={{cate.url}}>{{cate.name}}</a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </nav>
             {% endblock %} 
         </div>
 
@@ -31,6 +56,7 @@
         {% endblock %}
        
         <div id="footer">
+            © 2017 <a href="#">{{config.basic.author}}</a>
             主题提供: <a href="https://github.com/laoqiren/yohe">Yohe</a>
             Powered By <a href="https://github.com/laoqiren/yohe">Yohe</a>
             图片存储: <a href="http://www.qiniu.com/">qiniu</a>
