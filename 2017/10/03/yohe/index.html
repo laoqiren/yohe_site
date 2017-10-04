@@ -57,9 +57,10 @@
 <li>简单易用，快速</li>
 <li>本地预览效果</li>
 <li>可定制化信息和主题</li>
-<li>支持标签，分类，archives,分页等</li>
-<li>评论，统计(开发中)等功能</li>
-<li>首页可过滤分类文章</li>
+<li>新建自定义页面，可定制化导航菜单</li>
+<li>支持标签，分类，archives,分页等基础设施</li>
+<li>支持通过Github评论(gitment支持)</li>
+<li>首页可过滤指定分类文章</li>
 </ul>
 <h2>安装</h2>
 <pre class=><code>$ npm install yohe -g
@@ -69,18 +70,26 @@
 <pre class=><code>$ yohe --help
 </code></pre>
 <p><strong>初始化博客</strong></p>
-<pre class=><code>$ yohe init blog
-$ cd blog
+<pre class=><code>$ yohe init myblog
+$ cd myblog
 </code></pre>
+<p>该命令会初始化博客目录，包括初始化主题，文章，自定义页面等目录，以及加载默认配置文件</p>
 <p><strong>创建新文章</strong></p>
-<pre class=><code>$ yohe new cluster
+<pre class=><code>$ yohe new &lt;postName&gt;
 </code></pre>
+<p>该命令在<code>source/_posts/</code>下新建<code>&lt;postName&gt;.md</code>文件，在这里写作</p>
 <p><strong>渲染博客文件</strong></p>
 <pre class=><code>$ yohe build
 </code></pre>
+<p>该命令会渲染博客到<code>public</code>目录</p>
 <p><strong>本地预览</strong></p>
 <pre class=><code>$ yohe server
 </code></pre>
+<p>该命令会在本地起一个静态文件服务器，端口，子路径等信息可通过<code>config.json</code>配置</p>
+<p><strong>新增自定义页面</strong></p>
+<pre class=><code>$ yohe page &lt;pageName&gt;
+</code></pre>
+<p>该命令会在<code>source/_extra</code>下生成<code>&lt;pageName&gt;.md</code>文件,默认布局为<code>about</code>页面布局</p>
 <h2>配置文件</h2>
 <p>运行<code>yohe init</code>后会生成<code>config.json</code>,配置说明：</p>
 <pre class=json><code>{
@@ -93,7 +102,21 @@ $ cd blog
     <span class="hljs-attr">"theme"</span>: {
         <span class="hljs-attr">"highlightTheme"</span>: <span class="hljs-string">"railscasts"</span>, // 代码高亮主题，所有可用主题列表参照<span class="hljs-attr">"https://github.com/isagalaev/highlight.js/tree/master/src/styles"</span>
         <span class="hljs-attr">"per_page"</span>: <span class="hljs-number">6</span>,//每页展示的文章数
-        <span class="hljs-attr">"filter"</span>: [<span class="hljs-string">"life"</span>,<span class="hljs-string">"随笔"</span>]  // 首页过滤分类文章，比如生活随笔文章不显示在首页列表
+        <span class="hljs-attr">"filter"</span>: [<span class="hljs-string">"life"</span>,<span class="hljs-string">"随笔"</span>],  // 首页过滤分类文章，比如生活随笔文章不显示在首页列表
+        <span class="hljs-attr">"navPages"</span>: [     // 自定义导航菜单的页面标题和链接
+            {
+                <span class="hljs-attr">"title"</span>: <span class="hljs-string">"标签"</span>,
+                <span class="hljs-attr">"url"</span>: <span class="hljs-string">"/tags"</span>
+            },
+            {
+                <span class="hljs-attr">"title"</span>: <span class="hljs-string">"关于"</span>,
+                <span class="hljs-attr">"url"</span>: <span class="hljs-string">"/about"</span>
+            },
+            {
+                <span class="hljs-attr">"title"</span>: <span class="hljs-string">"生活随笔"</span>,
+                <span class="hljs-attr">"url"</span>: <span class="hljs-string">"/categories/life/"</span>
+            }
+        ]
     },
     <span class="hljs-attr">"server"</span>: {
         <span class="hljs-attr">"port"</span>: <span class="hljs-number">3000</span> //本地预览服务器端口
@@ -129,13 +152,15 @@ categories: Nodejs
 <ul>
 <li>关于页面为<code>source/_about/about.md</code></li>
 <li>指定首页过滤分类文章，可以很方便地实现<code>blog in blog</code></li>
+<li>文档名和分类名中的空格用<code>-</code>代替</li>
 </ul>
 <h2>TODOs</h2>
 <ul>
-<li>主题开发</li>
+<li>主题完善</li>
 <li>archives</li>
-<li>评论，统计等功能</li>
+<li>统计等功能</li>
 <li>更丰富的配置</li>
+<li>解耦主题功能</li>
 </ul>
 
     </div>
