@@ -50,7 +50,7 @@
 <a href="https://github.com/laoqiren/yohe"><img src="https://img.shields.io/npm/v/yohe.svg?style=flat-square" alt="npm"></a></p>
 <p>一个静态博客生成器，采用<a href="https://nodejs.org">Node.js</a>开发。Yohe = 哟呵，一个会让你发出”哟呵，不错哦“感叹的静态博客生成器。</p>
 <p>线上demo: <a href="http://luoxia.me/yohe_site/">http://luoxia.me/yohe_site/</a></p>
-<p><a href="https://github.com/laoqiren/yohe/blob/master/en.md">English doc</a></p>
+<p><a href="https://github.com/laoqiren/yohe/blob/master/README.md">English doc</a></p>
 <!--more-->
 <h2>功能</h2>
 <ul>
@@ -100,6 +100,7 @@ $ cd myblog
         <span class="hljs-attr">"root"</span>: <span class="hljs-string">""</span> // 博客根目录，当博客网站位于子路径如<span class="hljs-string">"http://luoxia.me/yohe_site"</span>时，配置为<span class="hljs-string">"/yohe_site"</span>
     },
     <span class="hljs-attr">"theme"</span>: {
+        <span class="hljs-attr">"themeName"</span>: <span class="hljs-string">"default"</span>,  // 主题名字
         <span class="hljs-attr">"highlightTheme"</span>: <span class="hljs-string">"railscasts"</span>, // 代码高亮主题，所有可用主题列表参照<span class="hljs-attr">"https://github.com/isagalaev/highlight.js/tree/master/src/styles"</span>
         <span class="hljs-attr">"per_page"</span>: <span class="hljs-number">6</span>,//每页展示的文章数
         <span class="hljs-attr">"filter"</span>: [<span class="hljs-string">"life"</span>,<span class="hljs-string">"随笔"</span>],  // 首页过滤分类文章，比如生活随笔文章不显示在首页列表
@@ -131,6 +132,7 @@ $ cd myblog
     }
 }
 </code></pre>
+<p>更丰富的配置正在开发中。</p>
 <h2>文章格式规范</h2>
 <p>参照下面的例子:</p>
 <pre class=><code>---
@@ -143,11 +145,19 @@ categories: Nodejs
 ---
 </code></pre>
 <p>其中<code>layout</code>默认为<code>post</code>,<code>comment</code>默认为<code>true</code></p>
-<p>更丰富的配置正在开发中</p>
 <h2>如何发布</h2>
 <p><code>Yohe</code>最终渲染结果在<code>public</code>目录，可采用多种方式起一个静态文件服务器，将<code>public</code>目录发布。</p>
-<h2>如何修改主题</h2>
-<p>目前<code>Yohe</code>的主题功能与<code>Yohe</code>耦合，需要修改主题可以对<code>source/_layout</code>和<code>public/assets/</code>进行开发，重新<code>yohe build</code>即可。未来的版本将解耦主题功能。</p>
+<h2>如何开发主题</h2>
+<p><strong>layouts:</strong></p>
+<pre class=><code>├── about.html    // 关于页面布局（必须）
+├── index.html    // 首页布局（必须）
+├── list.html     // 特定分类和标签文章列表布局（必须）
+├── post.html     // 文章详情页布局（可更名）
+└── tags.html     // 标签云布局（必须）
+└── ...           // 自定义的布局
+</code></pre>
+<p><strong>assets:</strong>
+静态资源文件放在<code>assets</code>目录下</p>
 <h2>其他技巧</h2>
 <ul>
 <li>关于页面为<code>source/_about/about.md</code></li>
@@ -156,12 +166,13 @@ categories: Nodejs
 </ul>
 <h2>TODOs</h2>
 <ul>
-<li>主题完善</li>
+<li>默认主题完善</li>
 <li>archives</li>
 <li>统计等功能</li>
 <li>更丰富的配置</li>
-<li>解耦主题功能</li>
 </ul>
+<h2>LICENSE</h2>
+<p>MIT.</p>
 
     </div>
     <div id="gitcomment"></div>
