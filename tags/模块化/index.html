@@ -16,16 +16,15 @@
 </head>
 <body>
 
-    <div id="container">
-        <div id="nav">
+    <div id="page" class="hfeed site">
+        <header id="masthead" class="site-header">
             <div class="site-header-info">
-                <a href="/yohe_site/">
+                <a href="/yohe_site/" class="site-logo" title="laoqiren">
                     <img src="https://avatars2.githubusercontent.com/u/16136702?v=4&s=120" width="100" height="100"/>
                 </a>
                 <h1 class="site-title">罗峡的博客</h1>
                 <h2 class="site-description">爱技术，爱生活</h2>
             </div>
-
             
     
                 <nav class="site-navigation main-navigation">
@@ -52,121 +51,13 @@
                     </div>
                 </nav>
             
-                <nav class="categories">
-                    <h1 class="cate-title">categories</h1>
-                    <ul>
-                        
-                            
-                                <li>
-                                    <a href=/yohe_site/categories/Nodejs/index.html>Nodejs</a>
-                                </li>
-                            
-                        
-                            
-                                <li>
-                                    <a href=/yohe_site/categories/Haskell/index.html>Haskell</a>
-                                </li>
-                            
-                        
-                            
-                                <li>
-                                    <a href=/yohe_site/categories/JavaScript/index.html>JavaScript</a>
-                                </li>
-                            
-                        
-                            
-                                <li>
-                                    <a href=/yohe_site/categories/Web安全/index.html>Web安全</a>
-                                </li>
-                            
-                        
-                            
-                                <li>
-                                    <a href=/yohe_site/categories/React/index.html>React</a>
-                                </li>
-                            
-                        
-                            
-                                <li>
-                                    <a href=/yohe_site/categories/HTML5/index.html>HTML5</a>
-                                </li>
-                            
-                        
-                            
-                                <li>
-                                    <a href=/yohe_site/categories/ReactNative/index.html>ReactNative</a>
-                                </li>
-                            
-                        
-                            
-                                <li>
-                                    <a href=/yohe_site/categories/docker/index.html>docker</a>
-                                </li>
-                            
-                        
-                            
-                                <li>
-                                    <a href=/yohe_site/categories/前端工程/index.html>前端工程</a>
-                                </li>
-                            
-                        
-                            
-                                <li>
-                                    <a href=/yohe_site/categories/css/index.html>css</a>
-                                </li>
-                            
-                        
-                            
-                                <li>
-                                    <a href=/yohe_site/categories/Yohe/index.html>Yohe</a>
-                                </li>
-                            
-                        
-                            
-                        
-                            
-                                <li>
-                                    <a href=/yohe_site/categories/云计算/index.html>云计算</a>
-                                </li>
-                            
-                        
-                            
-                                <li>
-                                    <a href=/yohe_site/categories/Vue/index.html>Vue</a>
-                                </li>
-                            
-                        
-                            
-                                <li>
-                                    <a href=/yohe_site/categories/项目总结/index.html>项目总结</a>
-                                </li>
-                            
-                        
-                            
-                                <li>
-                                    <a href=/yohe_site/categories/数据结构与算法/index.html>数据结构与算法</a>
-                                </li>
-                            
-                        
-                            
-                                <li>
-                                    <a href=/yohe_site/categories/WebGL/index.html>WebGL</a>
-                                </li>
-                            
-                        
-                            
-                                <li>
-                                    <a href=/yohe_site/categories/Linux/index.html>Linux</a>
-                                </li>
-                            
-                        
-                    </ul>
-                </nav>
-            
  
-        </div>
+        </header>
 
-        
+        <div id="main" class="site-main">
+            <div id="primary">
+                <main id="content" class="site-content">
+                    
     <header class="list-header">
         <h1 class="list-title"><span>模块化</span></h1>
         <div class="taxonomy-description">
@@ -176,49 +67,180 @@
         </div>
     </header>
 
-    
-        <article>
-            <header class="article-header">
-                <h1><a href=/yohe_site/2016/07/23/js模块化规范总结篇/index.html>js模块化规范总结篇</a></h1>
-            </header>
-            <p>
-                <p>之前一篇文章讲过requirejs(amd规范描述)的路径问题，这篇文章对js模块化进行总结，AMD和CMD主要用于客户端的模块化，而CommonJS是Nodejs的规范，由于它们的差异性，也延伸出来一些模块化工具，如broswerify能够让客户端书写Commonjs规范的模块化代码，达到前后端模块公用，webpack支持各种规范的模块化方式，而到后来的ES2015模块化标准，它们的规范及差异就是本文要总结的。</p>
+    <main id="content" class="site-content">
+            
+                <article>
+                    <header class="article-header">
+                        <h1><a href=/yohe_site/2016/07/23/js模块化规范总结篇/index.html>js模块化规范总结篇</a></h1>
+                    </header>
+                    <p>
+                        <p>之前一篇文章讲过requirejs(amd规范描述)的路径问题，这篇文章对js模块化进行总结，AMD和CMD主要用于客户端的模块化，而CommonJS是Nodejs的规范，由于它们的差异性，也延伸出来一些模块化工具，如broswerify能够让客户端书写Commonjs规范的模块化代码，达到前后端模块公用，webpack支持各种规范的模块化方式，而到后来的ES2015模块化标准，它们的规范及差异就是本文要总结的。</p>
 <p>对于webpack的话，最近研究得比较多，我会在后面的另一篇文章中详细总结一下webpack的东西</p>
 
-            </p>
-            <p>
-                <a href=/yohe_site/2016/07/23/js模块化规范总结篇/index.html>阅读更多</a>
-            </p>
-            <footer class="article-footer">
-                in 前端工程 | 2016-07-23 | 0评论
-            </footer>
-        </article>
-    
-        <article>
-            <header class="article-header">
-                <h1><a href=/yohe_site/2016/05/07/requireJS/index.html>requireJS</a></h1>
-            </header>
-            <p>
-                <h4>序言</h4>
+                    </p>
+                    <p>
+                        <a href=/yohe_site/2016/07/23/js模块化规范总结篇/index.html>阅读更多</a>
+                    </p>
+                    <footer class="article-footer">
+                        in 前端工程 | 2016-07-23 | 0评论
+                    </footer>
+                </article>
+            
+                <article>
+                    <header class="article-header">
+                        <h1><a href=/yohe_site/2016/05/07/requireJS/index.html>requireJS</a></h1>
+                    </header>
+                    <p>
+                        <h4>序言</h4>
 <p>模块化开发在如今纷繁复杂的产品开发中显得非常重要，而由于js自身的缺陷，在es6之前，js并没有自己的模块规范，而nodeJS通过CommonJS的模块规范实现了自己的模块机制，但是这仅仅是在node端，而在客户端，有自己的实现方式，诸如AMD,CMD之类，本文是我初次接触AMD规范时遇到的问题总结，而这段序言也是在我后面重新加上的。</p>
 
-            </p>
-            <p>
-                <a href=/yohe_site/2016/05/07/requireJS/index.html>阅读更多</a>
-            </p>
-            <footer class="article-footer">
-                in 前端工程 | 2016-05-07 | 0评论
-            </footer>
-        </article>
+                    </p>
+                    <p>
+                        <a href=/yohe_site/2016/05/07/requireJS/index.html>阅读更多</a>
+                    </p>
+                    <footer class="article-footer">
+                        in 前端工程 | 2016-05-07 | 0评论
+                    </footer>
+                </article>
+            
+    </main>
     
 
-       
-        <div id="footer">
+                </main>
+            </div>
+
+            
+    
+                <div id="secondary" class="widget-area">
+
+                    <aside class="widget widget_categories">
+                        <h1 class="widget-title">categories</h1>
+                        <ul>
+                            
+                                
+                                    <li>
+                                        <a href=/yohe_site/categories/Nodejs/index.html>Nodejs</a>
+                                    </li>
+                                
+                            
+                                
+                                    <li>
+                                        <a href=/yohe_site/categories/Haskell/index.html>Haskell</a>
+                                    </li>
+                                
+                            
+                                
+                                    <li>
+                                        <a href=/yohe_site/categories/JavaScript/index.html>JavaScript</a>
+                                    </li>
+                                
+                            
+                                
+                                    <li>
+                                        <a href=/yohe_site/categories/Web安全/index.html>Web安全</a>
+                                    </li>
+                                
+                            
+                                
+                                    <li>
+                                        <a href=/yohe_site/categories/React/index.html>React</a>
+                                    </li>
+                                
+                            
+                                
+                                    <li>
+                                        <a href=/yohe_site/categories/HTML5/index.html>HTML5</a>
+                                    </li>
+                                
+                            
+                                
+                                    <li>
+                                        <a href=/yohe_site/categories/ReactNative/index.html>ReactNative</a>
+                                    </li>
+                                
+                            
+                                
+                                    <li>
+                                        <a href=/yohe_site/categories/docker/index.html>docker</a>
+                                    </li>
+                                
+                            
+                                
+                                    <li>
+                                        <a href=/yohe_site/categories/前端工程/index.html>前端工程</a>
+                                    </li>
+                                
+                            
+                                
+                                    <li>
+                                        <a href=/yohe_site/categories/welcome/index.html>welcome</a>
+                                    </li>
+                                
+                            
+                                
+                                    <li>
+                                        <a href=/yohe_site/categories/css/index.html>css</a>
+                                    </li>
+                                
+                            
+                                
+                                    <li>
+                                        <a href=/yohe_site/categories/Yohe/index.html>Yohe</a>
+                                    </li>
+                                
+                            
+                                
+                            
+                                
+                                    <li>
+                                        <a href=/yohe_site/categories/云计算/index.html>云计算</a>
+                                    </li>
+                                
+                            
+                                
+                                    <li>
+                                        <a href=/yohe_site/categories/Vue/index.html>Vue</a>
+                                    </li>
+                                
+                            
+                                
+                                    <li>
+                                        <a href=/yohe_site/categories/项目总结/index.html>项目总结</a>
+                                    </li>
+                                
+                            
+                                
+                                    <li>
+                                        <a href=/yohe_site/categories/数据结构与算法/index.html>数据结构与算法</a>
+                                    </li>
+                                
+                            
+                                
+                                    <li>
+                                        <a href=/yohe_site/categories/WebGL/index.html>WebGL</a>
+                                    </li>
+                                
+                            
+                                
+                                    <li>
+                                        <a href=/yohe_site/categories/Linux/index.html>Linux</a>
+                                    </li>
+                                
+                            
+                        </ul>
+                    </aside>
+                </div>
+            
+
+            
+        </div>
+
+        <footer id="colophon" class="site-footer">
             © 2017 <a href="#">laoqiren</a>
             主题提供: <a href="https://github.com/laoqiren/yohe">Yohe</a>
             Powered By <a href="https://github.com/laoqiren/yohe">Yohe</a>
             图片存储: <a href="http://www.qiniu.com/">qiniu</a>
-        </div>
+        </footer>
     </div>
 
     
