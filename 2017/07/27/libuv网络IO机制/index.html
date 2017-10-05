@@ -23,7 +23,7 @@
         <header id="masthead" class="site-header">
             <div class="site-header-info">
                 <a href="/yohe_site/" class="site-logo" title="laoqiren">
-                    <img src="https://avatars2.githubusercontent.com/u/16136702?v=4&s=120" width="100" height="100"/>
+                    <img src="/yohe_site/assets/images/logo.png" width="100" height="100"/>
                 </a>
                 <h1 class="site-title">罗峡的博客</h1>
                 <h2 class="site-description">爱技术，爱生活</h2>
@@ -44,7 +44,7 @@
   <div class="post">
     <div class="post-header">
       <h2 class="post-cate">in Nodejs</h2>
-      <h1>libuv网络I/O机制</h1>
+      <h1 class="entry-title">libuv网络I/O机制</h1>
     </div>
     <div class="post-content">
         <p>两条故事线去探索http.Server从<code>listen()</code>到<code>connection</code>事件的触发其背后的原理，主要是为了理解libuv在网络I/O方面的异步实现。一条故事线看TCP handle的I/O观察者是怎样加入到event loop的观察者队列，另一条故事线看隐藏于背后的event loop在liunx下如何利用系统的<code>epoll</code>机制注册并收集events从而调用观察者回调。</p>
