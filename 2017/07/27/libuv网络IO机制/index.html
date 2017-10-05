@@ -345,6 +345,10 @@ self.emit(<span class="hljs-string">'connection'</span>, socket);
 <p>可以看到暴露给应用层的异步网络I/O，内部实现还是同步的，因为epoll这种机制虽然是非阻塞的I/O多路复用，但是需要不断地去轮询事件的产生或者休眠，相当于还是阻塞了process。不过这些都是发生在V8外的event loop内部的，v8的线程没有被阻塞。而event loop的处理方式是要求<code>epoll_wait()</code>立即返回，通过循环的方式去调用它，这就有点类似于<code>read</code>方式了。</p>
 
     </div>
+    <div class="support">
+      <img id="ali_qr" src="/yohe_site/assets/images/alipay.jpg" alt="ali pay">
+      <p>打赏</p>
+    </div>
     <div id="gitcomment"></div>
   </div>
 
