@@ -46,7 +46,7 @@
 .support {
     text-align: center;
 }
-.support img {
+#ali_qr {
     width: 180px;
     max-width: 100%;
     height: auto;
