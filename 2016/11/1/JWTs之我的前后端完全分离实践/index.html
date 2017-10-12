@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="/yohe_site/assets/css/layout.css">
+    <link rel="stylesheet" href="https://imsun.github.io/gitment/style/default.css">
+    <script src="https://imsun.github.io/gitment/dist/gitment.browser.js"></script>
+    
+  <link rel="stylesheet"
+  href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/railscasts.min.css">
+  <link rel="stylesheet" href="/yohe_site/assets/css/post.css"/>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+
+    <title>
+    罗峡的博客
+</title>
+</head>
+<body>
+
+    <div id="page" class="hfeed site">
+        <header id="masthead" class="site-header">
+            <div class="site-header-info">
+                <a href="/yohe_site/" class="site-logo" title="laoqiren">
+                    <img src="/yohe_site/assets/images/logo.png" width="100" height="100"/>
+                </a>
+                <h1 class="site-title">罗峡的博客</h1>
+                <h2 class="site-description">爱技术，爱生活</h2>
+            </div>
+            
+  <div class="post-info">
+    <div class="site-published-separator"></div>
+    <h2 class="site-published">Published</h2>
+    <h2 class="site-publish-date">2016-11-01</h2>
+  </div>
+ 
+        </header>
+
+        <div id="main" class="site-main">
+            <div id="primary">
+                <main id="content" class="site-content">
+                    
+  <div class="post">
+    <div class="post-header">
+      <h2 class="post-cate">in Nodejs</h2>
+      <h1 class="entry-title">JWTs之我的前后端完全分离实践</h1>
+    </div>
+    <div class="post-content">
+        <blockquote>
+<p>JWT是一种用于双方之间传递安全信息的简洁的、URL安全的表述性声明规范。JWT作为一个开放的标准（ RFC 7519 ），定义了一种简洁的，自包含的方法用于通信双方之间以Json对象的形式安全的传递信息。因为数字签名的存在，这些信息是可信的，JWT可以使用HMAC算法或者是RSA的公私秘钥对进行签名。</p>
+</blockquote>
+<p>之前发表了一篇关于session相关的文章，当时也说明了session这种方式的一些问题，主要就是一个安全性问题。而作为OAuth标准的Access_Token具体解决方案之一的JWTs,使得一些问题得到很好的解决。</p>
+<p>文章主要介绍JWT的相关知识以及Nodejs中的JWT,最后，以一个我最近写的论坛为实例，总结一下我在前后端完全分离方面的实践。</p>
+<p>论坛采用Vue+express+mongodb开发，不断完善ing,欢迎访问github项目地址star:<a href="https://github.com/laoqiren/vue-express-forum">https://github.com/laoqiren/vue-express-forum</a>,论坛在线地址:<a href="http://120.77.38.217:3000">http://120.77.38.217:3000</a></p>
+<p><img src="http://7xsi10.com1.z0.glb.clouddn.com/UfIbUjj.png" alt="JWT"></p>
+<!--more-->
+<h3>JWTs:</h3>
+<h4>验证的大致流程:</h4>
+<ol>
+<li>客户端请求登录;</li>
+<li>验证信息，登录成功，server生成Access_Token,响应给客户端;</li>
+<li>客户端接收Token,储存，可以在localStorage,cookie,本地数据库等;</li>
+<li>以后每次请求server需要授权的API,带上Access_Token;</li>
+<li>server验证Token</li>
+</ol>
+<h4>JWT标准:</h4>
+<p>JWT包含三个部分:header头部,payload负载,signature签名;</p>
+<p>like this:</p>
+<pre class=><code>xxxxx.yyyyy.zzzzz
+</code></pre>
+<h5>header:</h5>
+<p>header包含两个信息，token类型和加密算法,然后使用Base64编码</p>
+<pre class=js><code>{
+  <span class="hljs-string">"alg"</span>: <span class="hljs-string">"HS256"</span>,
+  <span class="hljs-string">"typ"</span>: <span class="hljs-string">"JWT"</span>
+} 
+</code></pre>
+<h5>payload:</h5>
+<p>Payload包含实体，包括一些预定义的如iss（签发者） , exp（过期时间戳） , sub（面向的用户） , aud（接收方） , iat（签发时间）等,自定义字段等。</p>
+<pre class=js><code>{
+  <span class="hljs-string">"sub"</span>: <span class="hljs-string">"1234567890"</span>,
+  <span class="hljs-string">"name"</span>: <span class="hljs-string">"John Doe"</span>,
+  <span class="hljs-string">"admin"</span>: <span class="hljs-literal">true</span>
+}
+</code></pre>
+<h5>Signature</h5>
+<p>签名通过前面的header,payload加上一个secret,最终通过加密算法生成,如:</p>
+<pre class=js><code><span class="hljs-keyword">var</span> encodedString = base64UrlEncode(header) + <span class="hljs-string">"."</span> + base64UrlEncode(payload); 
+HMACSHA256(encodedString, <span class="hljs-string">'secret'</span>);
+</code></pre>
+<p>最终的结果如:</p>
+<pre class=><code>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJuaW5naGFvLm5ldCIsImV4cCI6IjE0Mzg5NTU0NDUiLCJuYW1lIjoid2FuZ2hhbyIsImFkbWluIjp0cnVlfQ.SwyHTEx_RQppr97g4J5lKXtabJecpejuef8AqKYMAJc
+</code></pre>
+<h4>客户端发送Token的方式:</h4>
+<p>发送Token可以通过异步的请求发送JSON,或者加入请求头，或者加入到URL的查询字符串里;</p>
+<p>关于请求头的话，RFC 6750定义了一个Bearer Token的标准，like this:</p>
+<pre class=><code>Authorization: Bearer &lt;token&gt;
+</code></pre>
+<h3>Node的jwt中间件</h3>
+<p>上面简略的讲了一下JWT的标准，详细内容可以查看官方文档，接下来谈谈Node中的生成Token,Token的验证，Token过期更新，Token持久化等问题。</p>
+<p>采用node 的jwt-simple中间件</p>
+<h4>生成Token:</h4>
+<pre class=js><code><span class="hljs-keyword">var</span> moment = <span class="hljs-built_in">require</span>(<span class="hljs-string">'moment'</span>);
+<span class="hljs-keyword">var</span> jwt = <span class="hljs-built_in">require</span>(<span class="hljs-string">"jwt-simple"</span>);
+...
+app.set(<span class="hljs-string">"jwtTokenSecret"</span>,<span class="hljs-string">"LuoXia"</span>);
+...
+var expires = moment().add(<span class="hljs-number">7</span>,<span class="hljs-string">'days'</span>).valueOf();
+<span class="hljs-keyword">var</span> token = jwt.encode({
+    <span class="hljs-attr">iss</span>: <span class="hljs-string">'admin'</span>,
+    <span class="hljs-attr">exp</span>: expires,
+	<span class="hljs-attr">user</span>: newUser.name
+}, req.app.get(<span class="hljs-string">'jwtTokenSecret'</span>));
+res.json({
+    <span class="hljs-attr">token</span> : token,
+    <span class="hljs-attr">expires</span>: expires,
+    <span class="hljs-attr">user</span>:{
+        <span class="hljs-attr">name</span>:newUser.name
+    }
+});
+</code></pre>
+<p>这里用到了moment中间件，生成过期时间</p>
+<h4>验证Token:</h4>
+<pre class=js><code>...
+var token = req.body.access_token;<span class="hljs-comment">//也可以是请求头或者查询字符串</span>
+<span class="hljs-keyword">if</span>(token){
+	<span class="hljs-keyword">try</span>{
+	    <span class="hljs-keyword">var</span> decoded = jwt.decode(token,req.app.get(<span class="hljs-string">'jwtTokenSecret'</span>));
+	    <span class="hljs-keyword">if</span>(decoded.exp &lt; <span class="hljs-built_in">Date</span>.now()){
+	        res.end(<span class="hljs-string">'token expired'</span>,<span class="hljs-number">401</span>);
+	        <span class="hljs-keyword">return</span>;
+		}
+	}<span class="hljs-keyword">catch</span>(err){
+	    res.send(<span class="hljs-number">401</span>);
+	    res.end();
+	    <span class="hljs-keyword">return</span>;
+	}
+	<span class="hljs-comment">//其他处理</span>
+} <span class="hljs-keyword">else</span> {
+	res.status(<span class="hljs-number">401</span>);
+    res.end();
+}
+</code></pre>
+<h4>更新Token:</h4>
+<pre class=js><code><span class="hljs-keyword">var</span> decoded = jwt.decode(token,req.app.get(<span class="hljs-string">'jwtTokenSecret'</span>));
+<span class="hljs-keyword">if</span>(decoded.exp &lt; <span class="hljs-built_in">Date</span>.now()){
+    <span class="hljs-keyword">var</span> expires = moment().add(<span class="hljs-number">7</span>,<span class="hljs-string">'days'</span>).valueOf();
+	<span class="hljs-keyword">var</span> token = jwt.encode({
+	    <span class="hljs-attr">iss</span>: decoded.iss,
+	    <span class="hljs-attr">exp</span>: expires,
+		<span class="hljs-attr">user</span>: decoded.user
+	}, req.app.get(<span class="hljs-string">'jwtTokenSecret'</span>));
+	res.json({
+	    <span class="hljs-attr">token</span> : token,
+	    <span class="hljs-attr">expires</span>: expires,
+	    <span class="hljs-attr">user</span>:{
+	        <span class="hljs-attr">name</span>:newUser.name
+	    }
+	});
+} <span class="hljs-keyword">else</span> {
+	...
+}
+</code></pre>
+<h4>持久化Token:</h4>
+<p>待补充</p>
+<h3>与session对比</h3>
+<ol>
+<li>
+<p>session依赖于cookie,容易受CSRF漏洞的攻击，不够安全。而JWTs则不依赖于Cookie,虽然token也可以储存在cookie，但是只作为储存方式，并没有作为验证手段。</p>
+</li>
+<li>
+<p>基于JWTs的Token验证方式是无状态的(stateless),自包含的，例如上例中生成token时就可以添加自定义项，这样就减少了许多数据库查询。</p>
+</li>
+<li>
+<p>Cookie可以通过设置使得在主域名和子域名都能访问到，而如果储存在localStorage下的话，只要是非同域都是不能互相访问到的，解决方案是在包含token的域下设置cookie,这样在其他子域名下就能访问到了。</p>
+</li>
+</ol>
+<p>由于其JWT的无状态性，我们可以很方便的开发一些公用的API，访问公用API只需带上Token，而一些商业性的API服务，可以解析不同的Token来进行计费。</p>
+<h3>前后端完全分离的尝试:</h3>
+<h4>技术选型:</h4>
+<p>Vue+express+mongodb</p>
+<h4>分析整个应用:</h4>
+<ol>
+<li>SPA,客户端需有自己的一套路由</li>
+<li>组件化开发，可复用</li>
+<li>数据逻辑管理，Vuex</li>
+<li>Node提供REST API</li>
+<li>Fetch API异步请求，更好的异步流程控制</li>
+<li>基于JWT的Token验证方式</li>
+<li>Webpack构建方案</li>
+<li>跨域问题</li>
+</ol>
+<p>论坛主要功能: 登录/注册,发表文章，获取文章,退出登录</p>
+<h4>客户端:</h4>
+<p><strong>在组件渲染之前，异步请求获取用户信息:</strong></p>
+<pre class=js><code>created(){
+      <span class="hljs-keyword">var</span> token = localStorage.getItem(<span class="hljs-string">"token"</span>);
+      <span class="hljs-keyword">var</span> _this = <span class="hljs-keyword">this</span>;
+      <span class="hljs-keyword">var</span> content = <span class="hljs-built_in">JSON</span>.stringify({
+            <span class="hljs-attr">access_token</span>:token
+          })
+      <span class="hljs-keyword">if</span>(token){
+        fetch(<span class="hljs-string">'http://localhost:3000/user'</span>,{
+          <span class="hljs-attr">method</span>:<span class="hljs-string">'POST'</span>,
+          <span class="hljs-attr">headers</span>: {
+                      <span class="hljs-string">"Content-Type"</span>: <span class="hljs-string">"application/json"</span>,
+                      <span class="hljs-string">"Content-Length"</span>: content.length.toString(),
+                    },
+          <span class="hljs-attr">body</span>: content
+        }).then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">res</span>)</span>{
+          <span class="hljs-keyword">if</span>(res.ok){
+            res.json().then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">data</span>)</span>{
+              <span class="hljs-built_in">console</span>.log(data.user.name);
+              _this.user = data.user;
+            });
+          } <span class="hljs-keyword">else</span> {
+            _this.user = <span class="hljs-literal">undefined</span>;
+          }
+        });
+      } <span class="hljs-keyword">else</span> {
+        <span class="hljs-keyword">this</span>.user = <span class="hljs-literal">undefined</span>;
+      }
+}
+</code></pre>
+<p><strong>登录</strong></p>
+<pre class=js><code>handleLog(){
+    <span class="hljs-keyword">let</span> _this = <span class="hljs-keyword">this</span>;
+    <span class="hljs-keyword">let</span> content = <span class="hljs-built_in">JSON</span>.stringify({
+            <span class="hljs-attr">name</span>:_this.name,
+            <span class="hljs-attr">password</span>:_this.password
+        });
+    fetch(<span class="hljs-string">'http://localhost:3000/log'</span>,{
+        <span class="hljs-attr">method</span>:<span class="hljs-string">'POST'</span>,
+        <span class="hljs-attr">headers</span>: {
+            <span class="hljs-string">"Content-Type"</span>: <span class="hljs-string">"application/json"</span>,
+            <span class="hljs-string">"Content-Length"</span>: content.length.toString(),
+        },
+        <span class="hljs-attr">body</span>: content
+        }).then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">res</span>)</span>{
+            <span class="hljs-keyword">if</span>(res.ok){
+                res.json().then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">data</span>)</span>{
+                localStorage.setItem(<span class="hljs-string">"token"</span>,data.token);
+                _this.user = data.user;
+                _this.$dispatch(<span class="hljs-string">'log'</span>,data.user);
+                _this.$router.go(<span class="hljs-string">'/'</span>);
+                });
+            } <span class="hljs-keyword">else</span> {
+                _this.user = <span class="hljs-literal">undefined</span>;
+            }
+        });
+}
+</code></pre>
+<p>注册与登录类似</p>
+<p><strong>退出登录</strong></p>
+<pre class=js><code>logOut(e){
+    e.preventDefault();
+    localStorage.removeItem(<span class="hljs-string">"token"</span>);
+    <span class="hljs-keyword">this</span>.$dispatch(<span class="hljs-string">"logOut"</span>);
+    <span class="hljs-keyword">this</span>.$router.go(<span class="hljs-string">"/"</span>);
+}
+</code></pre>
+<p><strong>发表文章</strong></p>
+<p>需带上Token</p>
+<pre class=js><code>handlePost(){
+    <span class="hljs-keyword">let</span> _this = <span class="hljs-keyword">this</span>;
+    <span class="hljs-keyword">let</span> content = <span class="hljs-built_in">JSON</span>.stringify({
+            <span class="hljs-attr">access_token</span>:localStorage.getItem(<span class="hljs-string">"token"</span>),
+            <span class="hljs-attr">title</span>:_this.title,
+            <span class="hljs-attr">content</span>:_this.content
+        });
+    fetch(<span class="hljs-string">'http://localhost:3000/post'</span>,{
+        <span class="hljs-attr">method</span>:<span class="hljs-string">'POST'</span>,
+        <span class="hljs-attr">headers</span>: {
+            <span class="hljs-string">"Content-Type"</span>: <span class="hljs-string">"application/json"</span>,
+            <span class="hljs-string">"Content-Length"</span>: content.length.toString(),
+        },
+        <span class="hljs-attr">body</span>: content
+        }).then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">res</span>)</span>{
+            <span class="hljs-keyword">if</span>(res.ok){  
+                _this.$router.go(<span class="hljs-string">'/'</span>);
+                <span class="hljs-built_in">window</span>.location.reload();
+            } <span class="hljs-keyword">else</span> {
+               <span class="hljs-built_in">console</span>.log(<span class="hljs-string">"发表文章失败"</span>)
+            }
+        });
+}
+</code></pre>
+<p><strong>路由权限访问限制</strong></p>
+<p>对于没有登录/注册的，不允许访问/post路由;</p>
+<p>对于已经登录的不允许访问/log和/reg路由;</p>
+<h4>服务端</h4>
+<p><strong>登录/注册成功生成Token的API</strong></p>
+<pre class=js><code><span class="hljs-keyword">var</span> expires = moment().add(<span class="hljs-number">7</span>,<span class="hljs-string">'days'</span>).valueOf();
+<span class="hljs-keyword">var</span> token = jwt.encode({
+    <span class="hljs-attr">iss</span>: <span class="hljs-string">'admin'</span>,
+    <span class="hljs-attr">exp</span>: expires,
+	<span class="hljs-attr">user</span>: newUser.name
+}, req.app.get(<span class="hljs-string">'jwtTokenSecret'</span>));
+res.status(<span class="hljs-number">200</span>);
+res.json({
+    <span class="hljs-attr">token</span> : token,
+    <span class="hljs-attr">expires</span>: expires,
+    <span class="hljs-attr">user</span>:{
+            <span class="hljs-attr">name</span>:user.name
+        }
+});
+</code></pre>
+<p><strong>根据Token提供User信息的API</strong></p>
+<pre class=js><code><span class="hljs-keyword">var</span> token = req.body.access_token;
+<span class="hljs-keyword">if</span>(token){
+    <span class="hljs-keyword">try</span>{
+        <span class="hljs-keyword">var</span> decoded = jwt.decode(token,req.app.get(<span class="hljs-string">'jwtTokenSecret'</span>));
+        <span class="hljs-keyword">if</span>(decoded.exp &lt; <span class="hljs-built_in">Date</span>.now()){
+            res.end(<span class="hljs-string">'token expired'</span>,<span class="hljs-number">401</span>);
+        }
+        <span class="hljs-comment">//console.log(decoded)</span>
+        res.status(<span class="hljs-number">200</span>);
+        res.json({
+            <span class="hljs-attr">user</span>:{
+                <span class="hljs-attr">name</span>:decoded.user
+            }
+            
+        });
+    } <span class="hljs-keyword">catch</span>(err){
+        res.status(<span class="hljs-number">401</span>);
+        res.send(<span class="hljs-string">'no token'</span>);
+    }
+}
+</code></pre>
+<p><strong>验证Token的发布文章API</strong></p>
+<pre class=JS><code><span class="hljs-keyword">var</span> token = req.body.access_token;
+    <span class="hljs-keyword">if</span>(token){
+        <span class="hljs-keyword">try</span>{
+            <span class="hljs-keyword">var</span> decoded = jwt.decode(token,req.app.get(<span class="hljs-string">'jwtTokenSecret'</span>));
+            <span class="hljs-keyword">if</span>(decoded.exp &lt; <span class="hljs-built_in">Date</span>.now()){
+                res.end(<span class="hljs-string">'token expired'</span>,<span class="hljs-number">401</span>);
+                <span class="hljs-keyword">return</span>;
+            }
+        }<span class="hljs-keyword">catch</span>(err){
+            res.send(<span class="hljs-number">401</span>);
+            res.end();
+            <span class="hljs-keyword">return</span>;
+        }
+        <span class="hljs-keyword">var</span> newPost = <span class="hljs-keyword">new</span> Post({
+            <span class="hljs-attr">name</span>:decoded.user,
+            <span class="hljs-attr">title</span>:req.body.title,
+            <span class="hljs-attr">content</span>:req.body.content
+        });
+        <span class="hljs-built_in">console</span>.log(newPost);
+        newPost.save(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">err,post</span>)</span>{
+            <span class="hljs-keyword">if</span>(err){
+                <span class="hljs-built_in">console</span>.log(<span class="hljs-string">"发表文章失败"</span>);
+                res.status(<span class="hljs-number">500</span>);
+                res.send({<span class="hljs-attr">error</span>:<span class="hljs-number">1</span>});
+            } <span class="hljs-keyword">else</span> {
+                <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'发表文章成功'</span>);
+                res.status(<span class="hljs-number">200</span>);
+                res.end();
+            }
+            <span class="hljs-comment">//console.log(post);</span>
+        });
+    } <span class="hljs-keyword">else</span>{
+        res.status(<span class="hljs-number">401</span>);
+        res.end();
+    }
+</code></pre>
+<p><strong>跨域设置</strong></p>
+<p>由于要在客户端服weppack sever中访问API,需解决跨域限制:</p>
+<pre class=js><code>app.all(<span class="hljs-string">"*"</span>,<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">req,res,next</span>)</span>{
+  res.header(<span class="hljs-string">"Access-Control-Allow-Origin"</span>, <span class="hljs-string">"*"</span>);
+  res.header(<span class="hljs-string">'Access-Control-Allow-Headers'</span>, <span class="hljs-string">'Content-Type, Content-Length, Authorization, Accept, X-Requested-With'</span>);
+  res.header(<span class="hljs-string">"Access-Control-Allow-Methods"</span>,<span class="hljs-string">"PUT,POST,GET,DELETE,OPTIONS"</span>);
+  next();
+});
+</code></pre>
+<h3>总结</h3>
+<p>JWT是一种OAuth2.0标准的Access_Token的具体实现方案，可以通过Authorization Bearer,url查询字符串，异步请求的req.body等方式向服务端发送JWT token, 其不依赖于Cookie,有效避免了CSRF攻击，其无状态性可以方便我们编写公共API，此种方案，更加符合RESTFUL API设计理念,在前后端分离实践中发挥着重要的作用。</p>
+<p><strong>永远把自己当做一个beginner,保持好奇心</strong></p>
+
+    </div>
+
+    
+    
+    <div id="gitcomment"></div>
+  </div>
+
+                </main>
+            </div>
+
+            
+
+            
+        </div>
+
+        <footer id="colophon" class="site-footer">
+            © 2017 <a href="#">laoqiren</a>
+            主题提供: <a href="https://github.com/laoqiren/yohe">Yohe</a>
+            Powered By <a href="https://github.com/laoqiren/yohe">Yohe</a>
+            图片存储: <a href="http://www.qiniu.com/">qiniu</a>
+        </footer>
+    </div>
+
+    
+    <script>hljs.initHighlightingOnLoad();</script>
+    <script>
+        var gitment = new Gitment({
+          owner: "laoqiren",
+          repo: "yohe_site",
+          oauth: {
+            client_id: "73b3a1c0efb357bcbb91",
+            client_secret: "71e4bb221d644944060025407944fe2f51126ee6"
+          }
+        })
+        gitment.render('gitcomment')
+    </script>
+
+</body>
+</html>
